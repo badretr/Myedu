@@ -1,0 +1,60 @@
+﻿{% extends "base.html" %}
+{% block title %}Mon Groupe - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Mon Groupe</li>
+</ol></nav>
+<div class="page-title"><i class="fas fa-users me-2"></i>Mon Groupe</div>
+{% if enrollment %}
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card-myedu p-4">
+      <div class="section-title">Informations du groupe</div>
+      <div class="mb-3">
+        <div class="info-label">Classe</div>
+        <div class="info-value" style="color:var(--primary);font-size:1.2rem;">{{ enrollment.classroom.name }}, {{ enrollment.classroom.specialty }}</div>
+      </div>
+      <div class="mb-3">
+        <div class="info-label">Groupe</div>
+        <div class="info-value" style="color:var(--secondary);">{{ enrollment.classroom.group }}</div>
+      </div>
+      <div class="mb-3">
+        <div class="info-label">Ecole</div>
+        <div class="info-value" style="color:#dc2626;">{{ enrollment.classroom.academic_year }}</div>
+      </div>
+      <div class="mb-3">
+        <div class="info-label">Cycle</div>
+        <div class="info-value" style="color:#7c3aed;">{{ enrollment.classroom.cycle }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card-myedu p-4">
+      <div class="section-title">Registre d'appel</div>
+      <div class="info-label">Sous-groupe</div>
+      <div class="info-value" style="color:var(--warning);font-size:1.1rem;">{{ enrollment.subgroup|default:"Non defini" }}</div>
+      <div class="mt-3">
+        <div class="info-label">Matricule</div>
+        <div class="info-value">{{ enrollment.matricule }}</div>
+      </div>
+    </div>
+    <div class="card-myedu p-4 mt-3">
+      <div class="section-title">Niveaux de langue</div>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="p-2 text-center rounded-3" style="background:#d1fae5;color:#065f46;font-weight:700;font-size:0.9rem;">FRANCAIS</div>
+          <div class="p-2 text-center rounded-3 mt-1" style="background:#fee2e2;color:#991b1b;">Centre de langue</div>
+        </div>
+        <div class="col-6">
+          <div class="p-2 text-center rounded-3" style="background:#d1fae5;color:#065f46;font-weight:700;font-size:0.9rem;">ANGLAIS</div>
+          <div class="p-2 text-center rounded-3 mt-1" style="background:#fee2e2;color:#991b1b;">Centre de langue</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center text-muted py-5"><i class="fas fa-users fa-3x mb-3 d-block"></i>Vous n'etes inscrit dans aucun groupe.</div>
+{% endif %}
+{% endblock %}

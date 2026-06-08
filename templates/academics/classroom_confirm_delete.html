@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Supprimer classe{% endblock %}
+{% block content %}
+<div class="card-myedu p-4 mt-3" style="max-width:600px;margin:auto;">
+  <div class="section-title text-danger">Confirmer la suppression</div>
+  <p>Voulez-vous vraiment supprimer la classe <strong>{{ obj }}</strong> ?</p>
+  <p class="text-muted mb-3" style="font-size:0.9rem;">
+    Remarque: la suppression peut aussi supprimer les elements lies (matieres, semestres, emplois du temps, notes).
+  </p>
+  <form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Oui, supprimer</button>
+    <a href="{% url 'academics:classroom_list' %}" class="btn btn-outline-myedu">Annuler</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+﻿{% extends "base.html" %}
+{% block title %}Boite de reception - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}"><i class="fas fa-home"></i> Accueil</a></li>
+  <li class="breadcrumb-item active">Boite de reception</li>
+</ol></nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <div class="page-title"><i class="fas fa-envelope me-2"></i>Boite de reception</div>
+    <div class="page-subtitle">Mes messages</div>
+  </div>
+  {% if user.is_admin_user or user.is_teacher %}
+  <a href="{% url 'core:message_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouveau message</a>
+  {% endif %}
+</div>
+<div class="row g-3">
+  {% for item in messages_list %}
+  <div class="col-md-6 col-lg-4">
+    <a href="{% url 'core:message_detail' item.msg.pk %}" class="msg-card {% if not item.is_read %}unread{% endif %} {% if item.msg.classroom %}highlighted{% endif %}">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="msg-card-title">{{ forloop.counter }}) {{ item.msg.title|upper }}</div>
+        {% if item.msg.classroom %}<span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.7rem;">{{ item.msg.classroom.group }}</span>{% endif %}
+      </div>
+      <div class="text-center my-2"><i class="fas fa-folder-open fa-2x text-muted"></i></div>
+      <div class="msg-card-preview"><i class="fas fa-quote-left me-1"></i>{{ item.msg.content|truncatechars:60 }}</div>
+      <div class="msg-card-meta">
+        <i class="fas fa-calendar me-1"></i>{{ item.msg.created_at|date:"d-m-Y" }}
+        <i class="fas fa-clock ms-2 me-1"></i>{{ item.msg.created_at|time:"H:i:s" }}
+      </div>
+      {% if item.msg.attachment %}
+        <div class="mt-1" style="font-size:0.78rem;color:#ef4444;"><i class="fas fa-paperclip me-1"></i>Ce message contient une piece jointe</div>
+      {% endif %}
+    </a>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center text-muted py-5"><i class="fas fa-inbox fa-3x mb-3 d-block"></i>Aucun message.</div>
+  {% endfor %}
+</div>
+{% endblock %}

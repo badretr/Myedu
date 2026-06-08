@@ -1,0 +1,67 @@
+﻿{% extends "base.html" %}
+{% block title %}{{ classroom }} - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  <li class="breadcrumb-item active">{{ classroom }}</li>
+</ol></nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="page-title mb-0">{{ classroom }}</div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'academics:classroom_update' classroom.pk %}" class="btn btn-outline-myedu"><i class="fas fa-pen me-2"></i>Modifier</a>
+    <a href="{% url 'academics:classroom_delete' classroom.pk %}" class="btn btn-outline-danger"><i class="fas fa-trash me-2"></i>Supprimer</a>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card-myedu">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-users me-2"></i>Etudiants inscrits ({{ enrollments.count }})</span>
+      </div>
+      <div class="p-3">
+        <table class="table table-myedu mb-0">
+          <thead><tr><th>Nom complet</th><th>Matricule</th><th>Sous-groupe</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for enr in enrollments %}
+            <tr>
+              <td>{{ enr.student.get_full_name }}</td>
+              <td>{{ enr.matricule }}</td>
+              <td>{{ enr.subgroup|default:"-" }}</td>
+              <td>
+                <form method="post" class="d-inline">{% csrf_token %}
+                  <input type="hidden" name="action" value="remove_student">
+                  <input type="hidden" name="enrollment_id" value="{{ enr.pk }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-times"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Aucun etudiant inscrit.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter un etudiant</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_student">
+        <div class="mb-3">
+          <label class="form-label">Etudiant</label>
+          <select name="student_id" class="form-select" required>
+            <option value="">-- Selectionner --</option>
+            {% for s in students_not_enrolled %}<option value="{{ s.pk }}">{{ s.get_full_name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Matricule</label><input type="text" name="matricule" class="form-control" placeholder="ex: 2024MAT001"></div>
+        <div class="mb-3"><label class="form-label">Sous-groupe</label><input type="text" name="subgroup" class="form-control" placeholder="ex: Sous Groupe 1"></div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-user-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

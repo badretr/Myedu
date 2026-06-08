@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Myedu{% endblock %}</title>
+  {% load static %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="{% static 'css/myedu.css' %}" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<nav class="navbar-myedu d-flex align-items-center justify-content-between">
+  <div class="d-flex align-items-center gap-3">
+    <a class="navbar-brand-myedu" href="{% url 'core:home' %}">
+      <span>M</span>Myedu
+    </a>
+    <div class="d-none d-lg-flex align-items-center gap-1">
+      <a class="nav-link-myedu" href="{% url 'core:home' %}"><i class="fas fa-home"></i> Accueil</a>
+      <div class="dropdown">
+        <a class="nav-link-myedu dropdown-toggle" href="#" data-bs-toggle="dropdown">
+          <i class="fas fa-graduation-cap"></i> Scolarité
+        </a>
+        <ul class="dropdown-menu dropdown-myedu">
+          <li><a class="dropdown-item" href="{% url 'academics:my_grades' %}"><i class="fas fa-star me-2 text-warning"></i>Mes résultats</a></li>
+          <li><a class="dropdown-item" href="{% url 'academics:my_absences' %}"><i class="fas fa-calendar-times me-2 text-danger"></i>Mes absences</a></li>
+          <li><a class="dropdown-item" href="{% url 'academics:schedule' %}"><i class="fas fa-calendar-alt me-2 text-primary"></i>Emploi du temps</a></li>
+          <li><a class="dropdown-item" href="{% url 'academics:my_group' %}"><i class="fas fa-users me-2 text-success"></i>Mon groupe</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'documents:documents' %}"><i class="fas fa-file-alt me-2 text-info"></i>Documents</a></li>
+        </ul>
+      </div>
+      <a class="nav-link-myedu" href="{% url 'core:inbox' %}"><i class="fas fa-envelope"></i> Messages</a>
+      <a class="nav-link-myedu" href="{% url 'finance:my_balance' %}"><i class="fas fa-wallet"></i> Mon Solde</a>
+      {% if user.is_admin_user %}
+      <div class="dropdown">
+        <a class="nav-link-myedu dropdown-toggle" href="#" data-bs-toggle="dropdown">
+          <i class="fas fa-cog"></i> Admin
+        </a>
+        <ul class="dropdown-menu dropdown-myedu">
+          <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="fas fa-users me-2"></i>Gérer comptes</a></li>
+          <li><a class="dropdown-item" href="{% url 'accounts:user_create' %}"><i class="fas fa-user-plus me-2"></i>Créer compte</a></li>
+          <li><a class="dropdown-item" href="{% url 'academics:classroom_list' %}"><i class="fas fa-chalkboard me-2"></i>Gérer classes</a></li>
+          <li><a class="dropdown-item" href="{% url 'core:message_create' %}"><i class="fas fa-paper-plane me-2"></i>Envoyer message</a></li>
+          <li><a class="dropdown-item" href="{% url 'core:news_create' %}"><i class="fas fa-newspaper me-2"></i>Publier actualité</a></li>
+          <li><a class="dropdown-item" href="{% url 'documents:admin_requests' %}"><i class="fas fa-folder-open me-2"></i>Demandes docs</a></li>
+          <li><a class="dropdown-item" href="{% url 'academics:schedule_upload' %}"><i class="fas fa-calendar-upload me-2"></i>Emploi du temps</a></li>
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="dropdown dropdown-myedu">
+      <button class="btn p-0 border-0 bg-transparent d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+        {% if user.profile_picture %}
+          <img src="{{ user.profile_picture.url }}" class="navbar-avatar" alt="">
+        {% else %}
+          <span class="navbar-avatar-placeholder">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+        {% endif %}
+        <span class="text-white d-none d-md-inline" style="font-size:0.85rem;font-weight:600;">{{ user.get_full_name }}</span>
+        <i class="fas fa-chevron-down text-white" style="font-size:0.7rem;"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end dropdown-myedu">
+        <li class="px-3 py-2 border-bottom">
+          <div style="font-weight:700;">{{ user.get_full_name }}</div>
+          <div style="font-size:0.8rem;color:#64748b;">{{ user.get_role_display }}</div>
+        </li>
+        <li><a class="dropdown-item mt-1" href="{% url 'accounts:profile' %}"><i class="fas fa-user me-2"></i>Mon profil</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+            <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
+<div class="{% if user.is_authenticated %}page-wrapper{% endif %}">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show alert-myedu mb-3" role="alert">
+        <i class="fas fa-info-circle"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

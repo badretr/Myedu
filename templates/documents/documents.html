@@ -1,0 +1,87 @@
+﻿{% extends "base.html" %}
+{% block title %}Documents - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Documents Administratifs</li>
+</ol></nav>
+<div class="page-title"><i class="fas fa-file-alt me-2"></i>Demander des Documents Administratifs</div>
+<div class="alert-myedu mb-4" style="background:#fef3c7;color:#92400e;">
+  <i class="fas fa-exclamation-triangle fa-lg"></i>
+  <div>
+    <span style="color:#dc2626;font-weight:600;">Les etudiants qui n'ont pas regle leur situation financiere doivent contacter l'administration.</span><br>
+    Vous pouvez demander en ligne tous les types de documents administratifs.
+  </div>
+</div>
+<div class="row g-3 mb-4">
+  {% with types="carte_etudiant,cert_inscription,attest_presence,attest_reussite,releve_notes" %}
+  <div class="col-6 col-md-2">
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="doc_type" value="carte_etudiant">
+      <button type="submit" class="home-tile w-100 border-0">
+        <div class="home-tile-icon icon-blue"><i class="fas fa-id-card"></i></div>
+        <span class="home-tile-label">Carte d'etudiant</span>
+      </button>
+    </form>
+  </div>
+  <div class="col-6 col-md-2">
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="doc_type" value="cert_inscription">
+      <button type="submit" class="home-tile w-100 border-0">
+        <div class="home-tile-icon icon-green"><i class="fas fa-certificate"></i></div>
+        <span class="home-tile-label">Cert. d'inscription</span>
+      </button>
+    </form>
+  </div>
+  <div class="col-6 col-md-2">
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="doc_type" value="attest_presence">
+      <button type="submit" class="home-tile w-100 border-0">
+        <div class="home-tile-icon icon-cyan"><i class="fas fa-map-marker-alt"></i></div>
+        <span class="home-tile-label">Attest. de presence</span>
+      </button>
+    </form>
+  </div>
+  <div class="col-6 col-md-2">
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="doc_type" value="attest_reussite">
+      <button type="submit" class="home-tile w-100 border-0">
+        <div class="home-tile-icon icon-indigo"><i class="fas fa-graduation-cap"></i></div>
+        <span class="home-tile-label">Attest. de reussite</span>
+      </button>
+    </form>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="home-tile" style="opacity:0.5;cursor:not-allowed;">
+      <div class="home-tile-icon" style="background:#94a3b8;"><i class="fas fa-lock"></i></div>
+      <span class="home-tile-label">Releve des notes</span>
+    </div>
+  </div>
+  {% endwith %}
+</div>
+<div class="section-title">Mes Demandes</div>
+{% if my_requests %}
+<div class="card-myedu">
+  <table class="table table-myedu mb-0">
+    <thead><tr><th>Document</th><th>Date</th><th>Statut</th></tr></thead>
+    <tbody>
+      {% for req in my_requests %}
+      <tr>
+        <td>{{ req.get_doc_type_display }}</td>
+        <td>{{ req.created_at|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% if req.status == 'pending' %}<span class="badge bg-warning text-dark">En attente</span>
+          {% elif req.status == 'processing' %}<span class="badge bg-info">En traitement</span>
+          {% elif req.status == 'ready' %}<span class="badge bg-success">Pret</span>
+          {% elif req.status == 'delivered' %}<span class="badge bg-secondary">Livre</span>
+          {% elif req.status == 'rejected' %}<span class="badge bg-danger">Rejete</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center text-muted py-4">Aucune demande effectuee.</div>
+{% endif %}
+{% endblock %}

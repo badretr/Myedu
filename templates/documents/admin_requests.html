@@ -1,0 +1,46 @@
+﻿{% extends "base.html" %}
+{% block title %}Gestion documents - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Demandes de documents</li>
+</ol></nav>
+<div class="page-title">Gestion des demandes de documents</div>
+<div class="card-myedu">
+  <table class="table table-myedu mb-0">
+    <thead><tr><th>Etudiant</th><th>Document</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for req in all_requests %}
+      <tr>
+        <td><strong>{{ req.student.get_full_name }}</strong></td>
+        <td>{{ req.get_doc_type_display }}</td>
+        <td>{{ req.created_at|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% if req.status == 'pending' %}<span class="badge bg-warning text-dark">En attente</span>
+          {% elif req.status == 'processing' %}<span class="badge bg-info">En traitement</span>
+          {% elif req.status == 'ready' %}<span class="badge bg-success">Pret</span>
+          {% elif req.status == 'delivered' %}<span class="badge bg-secondary">Livre</span>
+          {% elif req.status == 'rejected' %}<span class="badge bg-danger">Rejete</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" class="d-flex gap-1">
+            {% csrf_token %}
+            <input type="hidden" name="request_id" value="{{ req.pk }}">
+            <select name="status" class="form-select form-select-sm" style="width:auto;">
+              <option value="pending">En attente</option>
+              <option value="processing">En traitement</option>
+              <option value="ready">Pret</option>
+              <option value="delivered">Livre</option>
+              <option value="rejected">Rejete</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary-myedu">OK</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">Aucune demande.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+﻿{% extends "base.html" %}
+{% block title %}Suggestions - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Suggestions</li>
+</ol></nav>
+<div class="page-title"><i class="fas fa-lightbulb me-2"></i>Mes Suggestions</div>
+<div class="alert-myedu mb-4" style="background:#e0f2fe;color:#0c4a6e;">
+  <i class="fas fa-info-circle fa-lg"></i>
+  <div>
+    <strong>NB.</strong><br>
+    Le nombre de caracteres minimal: <strong>60 caracteres</strong><br>
+    <span style="color:#dc2626;">Une case a cocher vous permet de cacher votre identite ou pas</span><br>
+    Vous pouvez envoyer une seule suggestion toutes les 24 heures.<br>
+    Les suggestions constructives seront traitees.
+  </div>
+</div>
+{% if not can_suggest %}
+<div class="alert-myedu mb-4" style="background:#fef3c7;color:#92400e;">
+  <i class="fas fa-clock fa-lg"></i>
+  <div>Vous avez deja envoye une suggestion dans les dernieres 24h. Revenez demain.</div>
+</div>
+{% endif %}
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="suggestion-cat-card" onclick="selectCat('administration')">
+      <i class="fas fa-building fa-2x mb-2 text-primary"></i><br><strong>Administration</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="suggestion-cat-card" onclick="selectCat('enseignement')">
+      <i class="fas fa-chalkboard-teacher fa-2x mb-2 text-success"></i><br><strong>Enseignement</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="suggestion-cat-card" onclick="selectCat('clubs')">
+      <i class="fas fa-music fa-2x mb-2 text-warning"></i><br><strong>Clubs</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="suggestion-cat-card" onclick="selectCat('infrastructure')">
+      <i class="fas fa-building fa-2x mb-2 text-info"></i><br><strong>Infrastructure</strong>
+    </div>
+  </div>
+</div>
+{% if can_suggest %}
+<div class="card-myedu p-4" style="max-width:700px;">
+  <div class="section-title">Envoyer une suggestion</div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="category" id="categoryInput" value="administration">
+    <div class="mb-3">
+      <label class="form-label">Categorie selectionnee</label>
+      <input type="text" class="form-control" id="categoryDisplay" readonly value="Administration">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Sous-categorie</label>
+      <input type="text" name="subcategory" class="form-control" placeholder="ex: Service Finance">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Votre suggestion (min. 60 caracteres)</label>
+      <textarea name="content" class="form-control" rows="5" minlength="60" required placeholder="Ecrivez votre suggestion ici..."></textarea>
+    </div>
+    <div class="form-check mb-3">
+      <input type="checkbox" name="is_anonymous" id="anonCheck" class="form-check-input">
+      <label for="anonCheck" class="form-check-label" style="color:#dc2626;">Envoyer de facon anonyme</label>
+    </div>
+    <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-paper-plane me-2"></i>Envoyer</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+function selectCat(cat) {
+  document.getElementById("categoryInput").value = cat;
+  const labels = {administration:"Administration", enseignement:"Enseignement", clubs:"Clubs", infrastructure:"Infrastructure"};
+  document.getElementById("categoryDisplay").value = labels[cat];
+  document.querySelectorAll(".suggestion-cat-card").forEach(c => c.classList.remove("selected"));
+  event.currentTarget.classList.add("selected");
+}
+</script>
+{% endblock %}

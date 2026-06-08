@@ -1,0 +1,48 @@
+﻿{% extends "base.html" %}
+{% block title %}Gestion paiements - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  <li class="breadcrumb-item active">Paiements - {{ enrollment.student.get_full_name }}</li>
+</ol></nav>
+<div class="page-title">Paiements de {{ enrollment.student.get_full_name }}</div>
+<div class="row g-4">
+  <div class="col-md-8">
+    {% for t in tranches %}
+    <div class="tranche-card mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="tranche-title">{{ t.label }}</div>
+        {% if t.is_paid %}
+          <span class="badge bg-success">Paye</span>
+        {% else %}
+          <form method="post" class="d-inline">{% csrf_token %}
+            <input type="hidden" name="action" value="pay">
+            <input type="hidden" name="tranche_id" value="{{ t.pk }}">
+            <button type="submit" class="btn btn-sm btn-success">Marquer paye</button>
+          </form>
+        {% endif %}
+      </div>
+      <div>Demande: {{ t.amount_requested }} DT &nbsp;|&nbsp; Paye: {{ t.amount_paid }} DT &nbsp;|&nbsp; Reste: {{ t.remaining }} DT</div>
+    </div>
+    {% empty %}
+    <div class="text-muted">Aucune tranche definie.</div>
+    {% endfor %}
+  </div>
+  <div class="col-md-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter une tranche</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="mb-2"><label class="form-label">Label</label><input type="text" name="label" class="form-control" placeholder="TRANCHE 1" required></div>
+        <div class="mb-2"><label class="form-label">Description</label><input type="text" name="description" class="form-control" placeholder="Avant 01/09"></div>
+        <div class="mb-2"><label class="form-label">Frais scolarite (DT)</label><input type="number" name="school_fees" class="form-control" step="0.001" value="0"></div>
+        <div class="mb-2"><label class="form-label">Montant demande (DT)</label><input type="number" name="amount_requested" class="form-control" step="0.001" value="0"></div>
+        <div class="mb-2"><label class="form-label">Montant paye (DT)</label><input type="number" name="amount_paid" class="form-control" step="0.001" value="0"></div>
+        <div class="mb-2"><label class="form-label">Taux de reduction (%)</label><input type="number" name="reduction_rate" class="form-control" step="0.1" value="0"></div>
+        <button type="submit" class="btn btn-primary-myedu w-100 mt-2"><i class="fas fa-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

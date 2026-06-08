@@ -1,0 +1,52 @@
+﻿{% extends "base.html" %}
+{% block title %}Saisie des notes - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  <li class="breadcrumb-item active">Notes - {{ classroom }}</li>
+</ol></nav>
+<div class="page-title">Saisie des notes - {{ classroom }}</div>
+<div class="card-myedu p-4 mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Matiere</label>
+      <select name="subject" class="form-select" required>
+        <option value="">-- Selectionner --</option>
+        {% for s in subjects %}<option value="{{ s.pk }}" {% if s.pk|stringformat:"s" == selected_subject %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Semestre</label>
+      <select name="semester" class="form-select" required>
+        <option value="">-- Selectionner --</option>
+        {% for sem in semesters %}<option value="{{ sem.pk }}" {% if sem.pk|stringformat:"s" == selected_semester %}selected{% endif %}>{{ sem.get_label_display }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4"><button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-search me-2"></i>Afficher</button></div>
+  </form>
+</div>
+{% if grades %}
+<div class="card-myedu">
+  <form method="post">
+    {% csrf_token %}
+    <table class="table table-myedu mb-0">
+      <thead><tr><th>Etudiant</th><th>CC</th><th>DS</th><th>Examen</th><th>Controle</th></tr></thead>
+      <tbody>
+        {% for g in grades %}
+        <tr>
+          <td><strong>{{ g.student.student.get_full_name }}</strong></td>
+          <td><input type="number" name="cc_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.cc|default:'' }}"></td>
+          <td><input type="number" name="ds_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.ds|default:'' }}"></td>
+          <td><input type="number" name="exam_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.exam|default:'' }}"></td>
+          <td><input type="number" name="controle_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.controle|default:'' }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="p-3">
+      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer les notes</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
