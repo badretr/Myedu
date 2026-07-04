@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class CustomUser(AbstractUser):
@@ -34,3 +35,13 @@ class CustomUser(AbstractUser):
     @property
     def is_parent(self):
         return self.role == 'parent'
+
+    @property
+    def linked_enrollment(self):
+        try:
+            return self.enrollment
+        except ObjectDoesNotExist:
+            return None
+
+    def display_name(self):
+        return self.get_full_name()

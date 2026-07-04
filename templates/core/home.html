@@ -3,18 +3,18 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-start mb-1">
   <div>
-    <div class="page-title">Bonjour {{ user.first_name }} &#128075;</div>
+    <div class="page-title">Bonjour {% if user.role == 'parent' and linked_enrollment %}{{ linked_enrollment.student.get_full_name }}{% else %}{{ user.first_name }}{% endif %} &#128075;</div>
     <div class="page-subtitle">
-      {% if user.enrollment %}{{ user.enrollment.classroom }}{% else %}{{ user.get_role_display }}{% endif %}
+      {% if linked_enrollment %}{{ linked_enrollment.classroom }}{% else %}{{ user.get_role_display }}{% endif %}
     </div>
   </div>
 </div>
 
 <div class="home-grid mb-4">
-  {% if user.is_student %}
+  {% if linked_enrollment %}
   <a href="{% url 'accounts:profile' %}" class="home-tile">
     <div class="home-tile-icon icon-blue"><i class="fas fa-id-card"></i></div>
-    <span class="home-tile-label">Carte Etudiant</span>
+    <span class="home-tile-label">Fiche Élève</span>
   </a>
   {% endif %}
   <a href="{% url 'core:inbox' %}" class="home-tile">

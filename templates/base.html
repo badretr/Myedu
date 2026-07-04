@@ -62,12 +62,12 @@
         {% else %}
           <span class="navbar-avatar-placeholder">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
         {% endif %}
-        <span class="text-white d-none d-md-inline" style="font-size:0.85rem;font-weight:600;">{{ user.get_full_name }}</span>
+        <span class="text-white d-none d-md-inline" style="font-size:0.85rem;font-weight:600;">{% if user.role == 'parent' and user.linked_enrollment %}{{ user.linked_enrollment.student.get_full_name }}{% else %}{{ user.get_full_name }}{% endif %}</span>
         <i class="fas fa-chevron-down text-white" style="font-size:0.7rem;"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end dropdown-myedu">
         <li class="px-3 py-2 border-bottom">
-          <div style="font-weight:700;">{{ user.get_full_name }}</div>
+          <div style="font-weight:700;">{% if user.role == 'parent' and user.linked_enrollment %}{{ user.linked_enrollment.student.get_full_name }}{% else %}{{ user.get_full_name }}{% endif %}</div>
           <div style="font-size:0.8rem;color:#64748b;">{{ user.get_role_display }}</div>
         </li>
         <li><a class="dropdown-item mt-1" href="{% url 'accounts:profile' %}"><i class="fas fa-user me-2"></i>Mon profil</a></li>

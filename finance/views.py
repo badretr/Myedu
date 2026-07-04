@@ -7,13 +7,37 @@ from academics.models import StudentEnrollment
 
 @login_required
 def my_balance(request):
-    enrollment = None
+    if request.user.is_admin_user:
+        enrollments = StudentEnrollment.objects.select_related('student', 'classroom').filter(is_active=True).order_by('classroom__name', 'student__last_name', 'student__first_name')
+        selected_id = request.GET.get('student')
+        selected_enrollment = None
+        if selected_id:
+            selected_enrollment = get_object_or_404(StudentEnrollment, pk=selected_id)
+        elif enrollments.exists():
+            selected_enrollment = enrollments.first()
+
+        tranches = []
+        total_requested = total_paid = total_remaining = 0
+        if selected_enrollment:
+            tranches = PaymentTranche.objects.filter(enrollment=selected_enrollment)
+            total_requested = sum(t.amount_requested for t in tranches)
+            total_paid = sum(t.amount_paid for t in tranches)
+            total_remaining = sum(t.remaining for t in tranches)
+
+        return render(request, 'finance/balance.html', {
+            'admin_mode': True,
+            'enrollments': enrollments,
+            'selected_enrollment': selected_enrollment,
+            'tranches': tranches,
+            'total_requested': total_requested,
+            'total_paid': total_paid,
+            'total_remaining': total_remaining,
+        })
+
+    enrollment = request.user.linked_enrollment
     tranches = []
-    try:
-        enrollment = StudentEnrollment.objects.get(student=request.user, is_active=True)
+    if enrollment and enrollment.is_active:
         tranches = PaymentTranche.objects.filter(enrollment=enrollment)
-    except StudentEnrollment.DoesNotExist:
-        pass
     total_requested = sum(t.amount_requested for t in tranches)
     total_paid = sum(t.amount_paid for t in tranches)
     total_remaining = sum(t.remaining for t in tranches)

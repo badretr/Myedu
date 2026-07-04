@@ -40,7 +40,7 @@ def profile_view(request):
 def user_list(request):
     if not request.user.is_admin_user:
         return redirect('core:home')
-    users = CustomUser.objects.all().order_by('role', 'last_name')
+    users = CustomUser.objects.filter(role__in=['admin', 'student']).order_by('role', 'last_name')
     return render(request, 'accounts/user_list.html', {'users': users})
 
 
@@ -53,7 +53,7 @@ def user_create(request):
         form.save()
         messages.success(request, 'Compte créé avec succès.')
         return redirect('accounts:user_list')
-    return render(request, 'accounts/user_form.html', {'form': form, 'title': 'Créer un compte'})
+    return render(request, 'accounts/user_form.html', {'form': form, 'title': 'Créer un compte élève'})
 
 
 @login_required

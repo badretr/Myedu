@@ -6,6 +6,11 @@ from .models import DocumentRequest
 
 @login_required
 def documents_view(request):
+    if request.user.is_admin_user:
+        return redirect("documents:admin_requests")
+    if not request.user.is_student:
+        return redirect("core:home")
+
     my_requests = DocumentRequest.objects.filter(student=request.user)
     if request.method == "POST":
         doc_type = request.POST.get("doc_type")

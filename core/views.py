@@ -12,23 +12,24 @@ def home_view(request):
     if request.user.is_authenticated:
         user_messages = get_user_messages(request.user)
         unread_count = sum(1 for m in user_messages if not m.is_read_by(request.user))
+        linked_enrollment = getattr(request.user, 'enrollment', None)
         return render(request, 'core/home.html', {
             'news': news,
             'unread_count': unread_count,
+            'linked_enrollment': linked_enrollment,
         })
     return render(request, 'core/home_public.html', {'news': news})
 
 
 def get_user_messages(user):
-    if user.is_admin_user or user.is_teacher:
-        return Message.objects.all()
-    try:
-        enrollment = StudentEnrollment.objects.get(student=user, is_active=True)
+    if user.is_admin_user:
+        return Message.objects.none()
+    enrollment = getattr(user, 'enrollment', None)
+    if enrollment and enrollment.is_active:
         return Message.objects.filter(
             classroom__isnull=True
         ) | Message.objects.filter(classroom=enrollment.classroom)
-    except StudentEnrollment.DoesNotExist:
-        return Message.objects.filter(classroom__isnull=True)
+    return Message.objects.filter(classroom__isnull=True)
 
 
 @login_required
@@ -50,7 +51,7 @@ def message_detail(request, pk):
 
 @login_required
 def message_create(request):
-    if not request.user.is_admin_user and not request.user.is_teacher:
+    if not request.user.is_admin_user:
         return redirect('core:inbox')
     classrooms = Classroom.objects.all()
     if request.method == 'POST':
@@ -70,7 +71,16 @@ def message_create(request):
 
 @login_required
 def suggestions_view(request):
-    from academics.models import Classroom
+    if request.user.is_admin_user:
+        suggestions = Suggestion.objects.select_related('sender').all()
+        return render(request, 'core/suggestions.html', {
+            'admin_mode': True,
+            'suggestions': suggestions,
+        })
+
+    if not request.user.is_student:
+        return redirect('core:home')
+
     last_24h = timezone.now() - timedelta(hours=24)
     can_suggest = not Suggestion.objects.filter(
         sender=request.user, created_at__gte=last_24h
@@ -85,7 +95,7 @@ def suggestions_view(request):
         )
         messages.success(request, 'Suggestion envoyée.')
         return redirect('core:suggestions')
-    return render(request, 'core/suggestions.html', {'can_suggest': can_suggest})
+    return render(request, 'core/suggestions.html', {'can_suggest': can_suggest, 'admin_mode': False})
 
 
 @login_required

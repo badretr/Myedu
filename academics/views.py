@@ -9,21 +9,18 @@ from accounts.models import CustomUser
 
 @login_required
 def my_group(request):
-    enrollment = None
-    try:
-        enrollment = StudentEnrollment.objects.get(student=request.user, is_active=True)
-    except StudentEnrollment.DoesNotExist:
-        pass
+    enrollment = request.user.linked_enrollment
+    if enrollment and not enrollment.is_active:
+        enrollment = None
     return render(request, "academics/my_group.html", {"enrollment": enrollment})
 
 
 @login_required
 def my_grades(request):
-    enrollment = None
+    enrollment = request.user.linked_enrollment
     grades_s1 = []
     grades_s2 = []
-    try:
-        enrollment = StudentEnrollment.objects.get(student=request.user, is_active=True)
+    if enrollment and enrollment.is_active:
         semesters_s1 = Semester.objects.filter(classroom=enrollment.classroom, label="S1")
         semesters_s2 = Semester.objects.filter(classroom=enrollment.classroom, label="S2")
         if semesters_s1.exists():
@@ -34,8 +31,6 @@ def my_grades(request):
             grades_s2 = Grade.objects.filter(
                 student=enrollment, semester__in=semesters_s2
             ).select_related("subject", "semester")
-    except StudentEnrollment.DoesNotExist:
-        pass
     return render(request, "academics/grades.html", {
         "enrollment": enrollment,
         "grades_s1": grades_s1,
@@ -45,13 +40,12 @@ def my_grades(request):
 
 @login_required
 def my_absences(request):
-    enrollment = None
+    enrollment = request.user.linked_enrollment
     absences_s1 = {}
     absences_s2 = {}
     semester_s1 = None
     semester_s2 = None
-    try:
-        enrollment = StudentEnrollment.objects.get(student=request.user, is_active=True)
+    if enrollment and enrollment.is_active:
         subjects = Subject.objects.filter(classroom=enrollment.classroom)
         semesters_s1 = Semester.objects.filter(classroom=enrollment.classroom, label="S1")
         semesters_s2 = Semester.objects.filter(classroom=enrollment.classroom, label="S2")
@@ -71,8 +65,6 @@ def my_absences(request):
             }
             absences_s1[subj.name] = entry
             absences_s2[subj.name] = entry
-    except StudentEnrollment.DoesNotExist:
-        pass
     return render(request, "academics/absences.html", {
         "enrollment": enrollment,
         "absences_s1": absences_s1,
@@ -84,13 +76,10 @@ def my_absences(request):
 
 @login_required
 def schedule_view(request):
-    enrollment = None
+    enrollment = request.user.linked_enrollment
     schedule = None
-    try:
-        enrollment = StudentEnrollment.objects.get(student=request.user, is_active=True)
+    if enrollment and enrollment.is_active:
         schedule = Schedule.objects.filter(classroom=enrollment.classroom).first()
-    except StudentEnrollment.DoesNotExist:
-        pass
     return render(request, "academics/schedule.html", {
         "enrollment": enrollment,
         "schedule": schedule,

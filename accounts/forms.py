@@ -24,7 +24,7 @@ class CustomUserCreationForm(forms.ModelForm):
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'email', 'role', 'phone',
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone',
                   'date_of_birth', 'nationality', 'profile_picture']
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
@@ -45,6 +45,7 @@ class CustomUserCreationForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.role = 'student'
         user.set_password(self.cleaned_data['password1'])
         if commit:
             user.save()

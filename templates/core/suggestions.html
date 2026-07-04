@@ -5,21 +5,43 @@
   <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
   <li class="breadcrumb-item active">Suggestions</li>
 </ol></nav>
+
+{% if admin_mode %}
+<div class="page-title"><i class="fas fa-lightbulb me-2"></i>Suggestions reçues</div>
+<div class="card-myedu">
+  <table class="table table-myedu mb-0">
+    <thead><tr><th>Date</th><th>Catégorie</th><th>Auteur</th><th>Contenu</th><th>État</th></tr></thead>
+    <tbody>
+      {% for s in suggestions %}
+      <tr>
+        <td>{{ s.created_at|date:"d/m/Y H:i" }}</td>
+        <td>{{ s.get_category_display }}</td>
+        <td>{% if s.is_anonymous %}Anonyme{% else %}{{ s.sender.get_full_name }}{% endif %}</td>
+        <td>{{ s.content|truncatechars:120 }}</td>
+        <td>{% if s.is_treated %}<span class="badge bg-success">Traitée</span>{% else %}<span class="badge bg-warning text-dark">Nouvelle</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">Aucune suggestion reçue.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
 <div class="page-title"><i class="fas fa-lightbulb me-2"></i>Mes Suggestions</div>
 <div class="alert-myedu mb-4" style="background:#e0f2fe;color:#0c4a6e;">
   <i class="fas fa-info-circle fa-lg"></i>
   <div>
     <strong>NB.</strong><br>
     Le nombre de caracteres minimal: <strong>60 caracteres</strong><br>
-    <span style="color:#dc2626;">Une case a cocher vous permet de cacher votre identite ou pas</span><br>
+    <span style="color:#dc2626;">Une case à cocher vous permet de cacher votre identité ou pas</span><br>
     Vous pouvez envoyer une seule suggestion toutes les 24 heures.<br>
-    Les suggestions constructives seront traitees.
+    Les suggestions constructives seront traitées.
   </div>
 </div>
 {% if not can_suggest %}
 <div class="alert-myedu mb-4" style="background:#fef3c7;color:#92400e;">
   <i class="fas fa-clock fa-lg"></i>
-  <div>Vous avez deja envoye une suggestion dans les dernieres 24h. Revenez demain.</div>
+  <div>Vous avez déjà envoyé une suggestion dans les dernières 24h. Revenez demain.</div>
 </div>
 {% endif %}
 <div class="row g-3 mb-4">
@@ -69,6 +91,7 @@
     <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-paper-plane me-2"></i>Envoyer</button>
   </form>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}
 {% block extra_js %}
