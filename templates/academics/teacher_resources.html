@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Ressources de cours - {{ classroom }} - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  {% if user.is_admin_user %}
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  {% else %}
+  <li class="breadcrumb-item"><a href="{% url 'academics:teacher_classrooms' %}">Mes classes</a></li>
+  {% endif %}
+  <li class="breadcrumb-item active">Ressources de cours</li>
+</ol></nav>
+<div class="page-title mb-3"><i class="fas fa-folder-open me-2"></i>Ressources de cours — {{ classroom }}</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Déposer une ressource</div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="mb-3"><label class="form-label">Matière</label>
+          <select name="subject" class="form-select" required>
+            {% for s in my_subjects %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+          </select></div>
+        <div class="mb-3"><label class="form-label">Titre</label>
+          <input type="text" name="title" class="form-control" placeholder="ex : Chapitre 3 - Résumé"></div>
+        <div class="mb-3"><label class="form-label">Description (optionnel)</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="ex : Support de cours + exercices corrigés"></textarea></div>
+        <div class="mb-3"><label class="form-label">Fichier</label>
+          <input type="file" name="file" class="form-control" required></div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-upload me-2"></i>Déposer</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="section-title">Ressources déposées</div>
+    {% for r in resources %}
+    <div class="msg-card mb-2 d-flex justify-content-between align-items-start gap-2">
+      <div>
+        <div class="msg-card-title">
+          <span class="badge-grade grade-na me-1">{{ r.created_at|date:"d/m/Y" }}</span>
+          {{ r.title }}
+          <span class="text-muted fw-normal" style="font-size:0.8rem;"> — {{ r.subject.name }}</span>
+        </div>
+        {% if r.description %}<div class="msg-card-preview">{{ r.description }}</div>{% endif %}
+        <div class="mt-1">
+          <a href="{{ r.file.url }}" target="_blank" class="btn btn-sm btn-outline-myedu">
+            <i class="fas fa-download me-1"></i>Télécharger
+          </a>
+        </div>
+      </div>
+      {% if user.is_admin_user or r.teacher_id == user.pk %}
+      <form method="post" onsubmit="return confirm('Supprimer cette ressource ?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" name="resource_id" value="{{ r.pk }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="card-myedu p-4 text-center text-muted">Aucune ressource déposée pour le moment.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

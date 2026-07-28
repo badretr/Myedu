@@ -76,6 +76,22 @@
         <div class="fs-4 fw-bold">{{ dashboard.students_count }} / {{ dashboard.teachers_count }} / {{ dashboard.parents_count }}</div>
       </div>
     </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <a href="{% url 'academics:notes_admin' %}" class="text-decoration-none" style="color:inherit;">
+          <div class="info-label"><i class="fas fa-comment-medical me-1 text-info"></i>Observations</div>
+          <div class="fs-3 fw-bold">{{ dashboard.obs_count_total }}</div>
+        </a>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <a href="{% url 'academics:notes_admin' %}" class="text-decoration-none" style="color:inherit;">
+          <div class="info-label"><i class="fas fa-gavel me-1 text-danger"></i>Punitions</div>
+          <div class="fs-3 fw-bold">{{ dashboard.pun_count_total }}</div>
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- ===== Documents par statut ===== -->
@@ -113,6 +129,36 @@
             <td>{{ a.student.classroom }}</td>
             <td>{{ a.subject.name }}</td>
             <td>{{ a.hours }}h</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if dashboard.recent_notes %}
+  <div class="card-myedu mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-clipboard-list me-2"></i>Observations &amp; punitions récentes</span>
+      <a href="{% url 'academics:notes_admin' %}" class="btn btn-sm btn-outline-light">Voir tout</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-myedu mb-0">
+        <thead><tr><th>Date</th><th>Type</th><th>Classe</th><th>Élève</th><th>Contenu</th><th>Auteur</th></tr></thead>
+        <tbody>
+          {% for n in dashboard.recent_notes %}
+          <tr>
+            <td class="text-nowrap">{{ n.date|date:"d/m/Y" }}</td>
+            <td>
+              <span class="badge {% if n.note_type == 'punition' %}bg-danger{% else %}bg-info text-dark{% endif %}">
+                {{ n.get_note_type_display }}
+              </span>
+            </td>
+            <td>{{ n.classroom }}</td>
+            <td>{{ n.student.student.get_full_name|default:"—" }}</td>
+            <td>{{ n.content|truncatechars:60 }}</td>
+            <td>{{ n.teacher.get_full_name|default:"Administration" }}</td>
           </tr>
           {% endfor %}
         </tbody>

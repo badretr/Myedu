@@ -63,7 +63,7 @@ DOC_STATUS_STYLE = {
 
 
 def build_admin_dashboard():
-    from academics.models import Absence, StudentEnrollment
+    from academics.models import Absence, StudentEnrollment, StudentNote
     from documents.models import DocumentRequest
     from finance.models import PaymentTranche
     from core.models import Suggestion
@@ -73,6 +73,13 @@ def build_admin_dashboard():
     absences_today = Absence.objects.filter(date=today).select_related(
         'student__student', 'subject'
     )
+
+    # Observations et punitions récentes (toute origine, y compris créées par l'admin)
+    recent_notes = StudentNote.objects.select_related(
+        'classroom', 'student__student', 'teacher', 'subject'
+    ).order_by('-created_at')[:8]
+    obs_count_total = StudentNote.objects.filter(note_type=StudentNote.TYPE_OBSERVATION).count()
+    pun_count_total = StudentNote.objects.filter(note_type=StudentNote.TYPE_PUNITION).count()
 
     # Taux de recouvrement et recette du mois
     all_tranches = PaymentTranche.objects.all()
@@ -113,6 +120,9 @@ def build_admin_dashboard():
         'revenue_this_month': revenue_this_month,
         'doc_breakdown': doc_breakdown,
         'total_docs': total_docs,
+        'recent_notes': recent_notes,
+        'obs_count_total': obs_count_total,
+        'pun_count_total': pun_count_total,
         'upcoming_events': SchoolEvent.objects.filter(
             Q(start_date__gte=today) | Q(end_date__gte=today)
         ).order_by('start_date')[:5],

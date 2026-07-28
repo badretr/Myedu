@@ -57,6 +57,10 @@
     <a class="sidebar-link {% if request.path == url_lessons %}active{% endif %}" href="{{ url_lessons }}">
       <i class="fas fa-book-open"></i> Cahier de textes
     </a>
+    {% url 'academics:my_resources' as url_resources %}
+    <a class="sidebar-link {% if request.path == url_resources %}active{% endif %}" href="{{ url_resources }}">
+      <i class="fas fa-folder-open"></i> Ressources de cours
+    </a>
     {% url 'documents:documents' as url_docs %}
     <a class="sidebar-link {% if request.path == url_docs %}active{% endif %}" href="{{ url_docs }}">
       <i class="fas fa-file-alt"></i> Documents

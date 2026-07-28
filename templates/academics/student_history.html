@@ -64,16 +64,16 @@
   </div>
   <div class="table-responsive">
     <table class="table table-myedu mb-2">
-      <thead><tr><th>Matière</th><th>Coef</th><th>CC</th><th>DS</th><th>Examen</th><th>Moyenne</th></tr></thead>
+      <thead><tr><th>Matière</th><th class="text-center">Coef</th><th class="text-center">Orale</th><th class="text-center">Examen d'évaluation</th><th class="text-center">Examen final</th><th class="text-center">Moyenne</th></tr></thead>
       <tbody>
         {% for grade in sem.rows %}
         <tr>
           <td>{{ grade.subject.name }}</td>
-          <td>{{ grade.subject.coefficient }}</td>
-          <td>{{ grade.cc|default_if_none:"—" }}</td>
-          <td>{{ grade.ds|default_if_none:"—" }}</td>
-          <td>{{ grade.exam|default_if_none:"—" }}</td>
-          <td>
+          <td class="text-center">{{ grade.subject.coefficient }}</td>
+          <td class="text-center">{{ grade.cc|default_if_none:"—" }}</td>
+          <td class="text-center">{{ grade.ds|default_if_none:"—" }}</td>
+          <td class="text-center">{{ grade.exam|default_if_none:"—" }}</td>
+          <td class="text-center">
             {% if grade.average is not None %}
             <span class="badge-grade {% if grade.average >= 10 %}grade-good{% else %}grade-bad{% endif %}">{{ grade.average }}</span>
             {% else %}—{% endif %}

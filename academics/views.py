@@ -8,7 +8,7 @@ from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from .models import (Classroom, StudentEnrollment, Subject, Grade, Absence,
                      Schedule, Semester, AcademicYear, StudentNote, EnrollmentHistory,
-                     ScheduleEntry, LessonEntry)
+                     ScheduleEntry, LessonEntry, CourseResource)
 from accounts.models import CustomUser
 
 
@@ -458,7 +458,7 @@ def bulletin_pdf(request, pk):
     ]))
     story += [info, Spacer(1, 14)]
 
-    data = [["Matière", "Coef", "CC", "DS", "Examen", "Moyenne", "Appréciation"]]
+    data = [["Matière", "Coef", "Orale", "Examen\nd'évaluation", "Examen\nfinal", "Moyenne", "Appréciation"]]
     for subj in subjects:
         g = grades.get(subj.pk)
         avg = g.average if g else None
@@ -468,7 +468,7 @@ def bulletin_pdf(request, pk):
             fmt(g.cc if g else None), fmt(g.ds if g else None), fmt(g.exam if g else None),
             fmt(avg), _appreciation(avg),
         ])
-    table = Table(data, colWidths=[5.2 * cm, 1.3 * cm, 1.6 * cm, 1.6 * cm, 1.8 * cm, 2.0 * cm, 4.5 * cm])
+    table = Table(data, colWidths=[4.8 * cm, 1.2 * cm, 1.3 * cm, 2.4 * cm, 1.8 * cm, 1.8 * cm, 4.5 * cm])
     style = [
         ("BACKGROUND", (0, 0), (-1, 0), indigo),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -1377,6 +1377,67 @@ def my_lessons(request):
         "enrollment": enrollment,
         "entries": entries,
         "homework_entries": homework_entries,
+    })
+
+
+@login_required
+def teacher_resources(request, classroom_pk):
+    """Ressources de cours côté enseignant : dépôt de supports par matière."""
+    if not request.user.is_teacher and not request.user.is_admin_user:
+        return redirect("core:home")
+    classroom = get_object_or_404(Classroom, pk=classroom_pk)
+    if request.user.is_teacher and not request.user.is_admin_user:
+        my_subjects = Subject.objects.filter(classroom=classroom, teacher=request.user)
+        if not my_subjects.exists():
+            return redirect("academics:teacher_classrooms")
+    else:
+        my_subjects = Subject.objects.filter(classroom=classroom)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "add":
+            subject = get_object_or_404(my_subjects, pk=request.POST.get("subject"))
+            uploaded_file = request.FILES.get("file")
+            if not uploaded_file:
+                messages.error(request, "Veuillez choisir un fichier.")
+            else:
+                CourseResource.objects.create(
+                    classroom=classroom,
+                    subject=subject,
+                    teacher=request.user,
+                    title=request.POST.get("title", "").strip() or uploaded_file.name,
+                    description=request.POST.get("description", "").strip(),
+                    file=uploaded_file,
+                )
+                messages.success(request, "Ressource ajoutée.")
+        elif action == "delete":
+            resource = get_object_or_404(CourseResource, pk=request.POST.get("resource_id"), classroom=classroom)
+            if request.user.is_admin_user or resource.teacher_id == request.user.pk:
+                resource.file.delete(save=False)
+                resource.delete()
+                messages.success(request, "Ressource supprimée.")
+        return redirect("academics:teacher_resources", classroom_pk=classroom.pk)
+
+    resources = CourseResource.objects.filter(classroom=classroom).select_related("subject", "teacher")
+    return render(request, "academics/teacher_resources.html", {
+        "classroom": classroom,
+        "my_subjects": my_subjects,
+        "resources": resources,
+    })
+
+
+@login_required
+def my_resources(request):
+    """Ressources de cours côté élève / parent : consultation et téléchargement."""
+    enrollment = request.user.linked_enrollment
+    resources = CourseResource.objects.none()
+    if enrollment and enrollment.is_active and enrollment.classroom:
+        resources = CourseResource.objects.filter(
+            classroom=enrollment.classroom
+        ).select_related("subject", "teacher").order_by("subject__name", "-created_at")
+    return render(request, "academics/my_resources.html", {
+        "enrollment": enrollment,
+        "resources": resources,
     })
 
 

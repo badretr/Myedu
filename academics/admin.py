@@ -1,7 +1,7 @@
 ﻿from django.contrib import admin
 from .models import (AcademicYear, Classroom, StudentEnrollment, Subject, Semester,
                      Grade, Absence, Schedule, StudentNote, EnrollmentHistory, ScheduleEntry,
-                     LessonEntry)
+                     LessonEntry, CourseResource)
 
 admin.site.register(AcademicYear)
 admin.site.register(Classroom)
@@ -15,3 +15,4 @@ admin.site.register(StudentNote)
 admin.site.register(EnrollmentHistory)
 admin.site.register(ScheduleEntry)
 admin.site.register(LessonEntry)
+admin.site.register(CourseResource)

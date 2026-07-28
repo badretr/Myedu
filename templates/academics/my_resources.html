@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Ressources de cours - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Ressources de cours</li>
+</ol></nav>
+<div class="page-title mb-3"><i class="fas fa-folder-open me-2"></i>Ressources de cours</div>
+
+{% if not enrollment %}
+<div class="card-myedu p-5 text-center text-muted">Aucune classe associée à ce compte.</div>
+{% else %}
+{% regroup resources by subject as subject_list %}
+{% for group in subject_list %}
+<div class="section-title">{{ group.grouper.name }}</div>
+<div class="mb-4">
+  {% for r in group.list %}
+  <div class="msg-card mb-2">
+    <div class="msg-card-title">
+      <span class="badge-grade grade-na me-1">{{ r.created_at|date:"d/m/Y" }}</span>
+      {{ r.title }}
+      {% if r.teacher %}<span class="text-muted fw-normal" style="font-size:0.8rem;"> — {{ r.teacher.get_full_name }}</span>{% endif %}
+    </div>
+    {% if r.description %}<div class="msg-card-preview">{{ r.description }}</div>{% endif %}
+    <div class="mt-1">
+      <a href="{{ r.file.url }}" target="_blank" class="btn btn-sm btn-outline-myedu">
+        <i class="fas fa-download me-1"></i>Télécharger
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% empty %}
+<div class="card-myedu p-4 text-center text-muted">Aucune ressource disponible pour le moment.</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

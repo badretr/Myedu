@@ -138,9 +138,9 @@ class Grade(models.Model):
     student = models.ForeignKey(StudentEnrollment, on_delete=models.CASCADE, related_name='grades')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='grades')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='grades')
-    cc = models.FloatField(null=True, blank=True, verbose_name='CC')
-    ds = models.FloatField(null=True, blank=True, verbose_name='DS')
-    exam = models.FloatField(null=True, blank=True, verbose_name='Examen')
+    cc = models.FloatField(null=True, blank=True, verbose_name='Orale')
+    ds = models.FloatField(null=True, blank=True, verbose_name="Examen d'évaluation")
+    exam = models.FloatField(null=True, blank=True, verbose_name='Examen final')
 
     class Meta:
         unique_together = ('student', 'subject', 'semester')
@@ -265,6 +265,25 @@ class LessonEntry(models.Model):
 
     def __str__(self):
         return f"{self.subject.name} - {self.date:%d/%m/%Y}"
+
+
+class CourseResource(models.Model):
+    """Support de cours déposé par l'enseignant, téléchargeable par les élèves de la classe."""
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name='resources')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='resources')
+    teacher = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='resources_uploaded')
+    title = models.CharField(max_length=200, verbose_name='Titre')
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to='resources/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Ressource de cours'
+        verbose_name_plural = 'Ressources de cours'
+
+    def __str__(self):
+        return f"{self.title} - {self.subject.name} ({self.classroom})"
 
 
 class Schedule(models.Model):
