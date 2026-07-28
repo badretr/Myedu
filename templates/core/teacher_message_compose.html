@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Nouveau message - Enseignant - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'core:inbox' %}">Messages</a></li>
+  <li class="breadcrumb-item active">Nouveau message</li>
+</ol></nav>
+<div class="card-myedu p-4 form-page-center">
+  <div class="section-title"><i class="fas fa-paper-plane me-2"></i>Envoyer un message</div>
+  <div class="page-subtitle mb-4">Choisissez un destinataire : administration ou parent d'élève</div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Titre</label>
+      <input type="text" name="title" class="form-control" required placeholder="Objet du message">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Destinataire</label>
+      <select name="target" id="target-select" class="form-select">
+        <option value="admin">Administration</option>
+        <option value="parent">Parent d'un élève</option>
+      </select>
+    </div>
+    <div class="mb-3" id="admin-info" style="background:#f0f7ff;border-radius:8px;padding:12px 16px;">
+      <i class="fas fa-info-circle me-2 text-primary"></i>
+      Le message sera envoyé à l'administration de l'établissement.
+    </div>
+    <div class="mb-3" id="student-block" style="display:none;">
+      <label class="form-label">Élève (le message sera envoyé à son parent)</label>
+      <select name="student" class="form-select">
+        <option value="">-- Sélectionner un élève --</option>
+        {% for student in students %}
+        <option value="{{ student.pk }}">
+          {{ student.get_full_name|default:student.username }}
+          {% if student.enrollment.classroom %} - {{ student.enrollment.classroom }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+      {% if not students %}
+      <div class="form-text text-warning mt-2">
+        <i class="fas fa-exclamation-triangle me-1"></i>
+        Aucun élève avec parent associé trouvé dans vos classes.
+      </div>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contenu</label>
+      <textarea name="content" class="form-control" rows="6" required placeholder="Écrivez votre message ici..."></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Piece jointe (optionnel)</label>
+      <input type="file" name="attachment" class="form-control">
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-paper-plane me-2"></i>Envoyer</button>
+      <a href="{% url 'core:inbox' %}" class="btn btn-outline-myedu">Annuler</a>
+    </div>
+  </form>
+</div>
+<script>
+(function () {
+  const targetSelect = document.getElementById('target-select');
+  const adminInfo = document.getElementById('admin-info');
+  const studentBlock = document.getElementById('student-block');
+
+  function sync() {
+    const isParent = targetSelect.value === 'parent';
+    adminInfo.style.display = isParent ? 'none' : '';
+    studentBlock.style.display = isParent ? '' : 'none';
+  }
+
+  targetSelect.addEventListener('change', sync);
+  sync();
+})();
+</script>
+{% endblock %}

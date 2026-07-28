@@ -8,19 +8,28 @@ from .models import DocumentRequest
 def documents_view(request):
     if request.user.is_admin_user:
         return redirect("documents:admin_requests")
-    if not request.user.is_student:
+    if request.user.is_student:
+        student = request.user
+    elif request.user.is_parent:
+        student = request.user.children.first()
+        if student is None:
+            messages.warning(request, "Aucun élève n'est associé à votre compte parent.")
+            return redirect("core:home")
+    else:
         return redirect("core:home")
 
-    my_requests = DocumentRequest.objects.filter(student=request.user)
+    my_requests = DocumentRequest.objects.filter(student=student)
     if request.method == "POST":
         doc_type = request.POST.get("doc_type")
         if doc_type and doc_type != "releve_notes":
-            DocumentRequest.objects.create(student=request.user, doc_type=doc_type)
+            DocumentRequest.objects.create(student=student, doc_type=doc_type)
             messages.success(request, "Demande envoyée avec succès.")
         elif doc_type == "releve_notes":
             messages.warning(request, "Le relevé des notes n'est pas disponible pour le moment.")
         return redirect("documents:documents")
-    return render(request, "documents/documents.html", {"my_requests": my_requests})
+    return render(request, "documents/documents.html", {
+        "my_requests": my_requests, "target_student": student,
+    })
 
 
 @login_required

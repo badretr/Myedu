@@ -6,22 +6,23 @@
   <li class="breadcrumb-item active">Classes</li>
 </ol></nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div class="page-title">Gestion des classes</div>
-  <a href="{% url 'academics:classroom_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouvelle classe</a>
+  <div class="page-title">Gestion des niveaux scolaires</div>
+  <a href="{% url 'academics:classroom_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouveau niveau</a>
 </div>
 <div class="row g-3">
   {% for cl in classrooms %}
   <div class="col-md-4">
     <div class="card-myedu p-4">
       <div style="font-weight:700;font-size:1.05rem;color:var(--primary);">{{ cl.name }}</div>
-      <div style="color:#64748b;font-size:0.85rem;">{{ cl.specialty }} - {{ cl.group }}</div>
+      <div style="color:#64748b;font-size:0.85rem;">{{ cl.specialty }}</div>
       <div style="font-size:0.8rem;color:#94a3b8;">{{ cl.cycle }} | {{ cl.academic_year }}</div>
       <div class="mt-2"><span class="badge bg-primary rounded-pill">{{ cl.enrollments.count }} etudiants</span></div>
-      <div class="d-flex gap-2 mt-3">
-        <a href="{% url 'academics:classroom_detail' cl.pk %}" class="btn btn-sm btn-outline-myedu"><i class="fas fa-users me-1"></i>Etudiants</a>
-        <a href="{% url 'academics:grades_admin' cl.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-star me-1"></i>Notes</a>
-        <a href="{% url 'academics:classroom_update' cl.pk %}" class="btn btn-sm btn-outline-myedu"><i class="fas fa-pen me-1"></i>Modifier</a>
-        <a href="{% url 'academics:classroom_delete' cl.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash me-1"></i>Supprimer</a>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a href="{% url 'academics:classroom_detail' cl.pk %}" class="btn btn-sm btn-outline-myedu flex-fill text-nowrap"><i class="fas fa-users me-1"></i>Etudiants</a>
+        <a href="{% url 'academics:classroom_detail' cl.pk %}#matieres" class="btn btn-sm btn-outline-myedu flex-fill text-nowrap"><i class="fas fa-book me-1"></i>Matières</a>
+        <a href="{% url 'academics:grades_admin' cl.pk %}" class="btn btn-sm btn-outline-primary flex-fill text-nowrap"><i class="fas fa-star me-1"></i>Notes</a>
+        <a href="{% url 'academics:classroom_update' cl.pk %}" class="btn btn-sm btn-outline-myedu flex-fill text-nowrap"><i class="fas fa-pen me-1"></i>Modifier</a>
+        <a href="{% url 'academics:classroom_delete' cl.pk %}" class="btn btn-sm btn-outline-danger flex-fill text-nowrap"><i class="fas fa-trash me-1"></i>Supprimer</a>
       </div>
     </div>
   </div>

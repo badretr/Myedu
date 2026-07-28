@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}{% if admin_mode %}Gestion des soldes - Myedu{% else %}Mon Solde - Myedu{% endif %}{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
@@ -6,187 +6,149 @@
   <li class="breadcrumb-item active">{% if admin_mode %}Gestion des soldes{% else %}Mon Solde{% endif %}</li>
 </ol></nav>
 <div class="page-title"><i class="fas fa-wallet me-2"></i>{% if admin_mode %}Gestion des soldes{% else %}Mon Solde{% endif %}</div>
-<div class="page-subtitle">{% if admin_mode %}Sélectionne un élève pour gérer son solde{% else %}Etat de paiements{% endif %}</div>
 
 {% if admin_mode %}
-<div class="row g-4">
-  <div class="col-lg-4">
-    <div class="card-myedu p-3" style="max-height: 760px; overflow:auto;">
-      <div class="section-title mb-3">Élèves</div>
-      {% for enr in enrollments %}
-      <a href="{% url 'finance:my_balance' %}?student={{ enr.pk }}" class="d-block p-3 rounded-3 mb-2 text-decoration-none" style="{% if selected_enrollment and selected_enrollment.pk == enr.pk %}background:#e0f2fe;border:1px solid #38bdf8;color:#0f172a;{% else %}background:#f8fafc;border:1px solid #e2e8f0;color:#0f172a;{% endif %}">
-        <div style="font-weight:700;">{{ enr.student.get_full_name }}</div>
-        <div style="font-size:0.82rem;color:#64748b;">{{ enr.classroom }} · {{ enr.matricule }}</div>
-      </a>
-      {% empty %}
-      <div class="text-muted">Aucun élève actif.</div>
-      {% endfor %}
+<div class="page-subtitle">Vue d'ensemble de la scolarité — cliquez sur un élève pour le détail</div>
+
+<!-- Synthèse école -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Total demandé</div>
+      <div class="fs-4 fw-bold">{{ grand_requested|floatformat:0 }} DT</div>
     </div>
   </div>
-  <div class="col-lg-8">
-    {% if selected_enrollment %}
-    <div class="card-myedu p-3 mb-4">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <div class="section-title mb-1">{{ selected_enrollment.student.get_full_name }}</div>
-          <div class="text-muted">{{ selected_enrollment.classroom }} · {{ selected_enrollment.matricule }}</div>
-        </div>
-        <a href="{% url 'finance:manage_tranches' selected_enrollment.pk %}" class="btn btn-primary-myedu btn-sm"><i class="fas fa-cog me-1"></i>Gérer</a>
-      </div>
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Total encaissé</div>
+      <div class="fs-4 fw-bold text-success">{{ grand_paid|floatformat:0 }} DT</div>
     </div>
-    {% endif %}
-    <div class="row g-4">
-      {% for t in tranches %}
-      <div class="col-md-6">
-        <div class="tranche-card">
-          <div class="tranche-title"><i class="fas fa-coins me-2"></i>{{ t.label }}</div>
-          {% if t.description %}<div style="font-size:0.8rem;color:#64748b;margin-bottom:0.75rem;">Description: {{ t.description }}</div>{% endif %}
-          <table class="w-100 mb-3" style="font-size:0.85rem;">
-            <thead><tr>
-              <th class="py-1 px-2" style="background:#f1f5f9;border-radius:6px 0 0 6px;">FRAIS SCOLARITE</th>
-              <th class="py-1 px-2" style="background:#f1f5f9;border-radius:0 6px 6px 0;">AUTRE</th>
-            </tr></thead>
-            <tbody><tr>
-              <td class="text-center py-1">{{ t.school_fees }} DT</td>
-              <td class="text-center py-1">{{ t.other_fees }} DT</td>
-            </tr></tbody>
-          </table>
-          <div class="row g-2 text-center mb-3">
-            <div class="col-4">
-              <div class="amount-label">Montant demande</div>
-              <div class="amount-value amount-requested">{{ t.amount_requested }} DT</div>
-            </div>
-            <div class="col-4">
-              <div class="amount-label">Montant paye</div>
-              <div class="amount-value amount-paid">{{ t.amount_paid }} DT</div>
-            </div>
-            <div class="col-4">
-              <div class="amount-label">Reste a payer</div>
-              <div class="amount-value {% if t.remaining <= 0 %}amount-paid{% else %}amount-remaining{% endif %}">{{ t.remaining }} DT</div>
-            </div>
-          </div>
-          {% if t.reduction_rate > 0 %}
-          <div class="p-2 rounded-3" style="background:#e0f2fe;font-size:0.8rem;color:#0c4a6e;">
-            <strong>Remarque:</strong> Reduction appliquee de {{ t.reduction_rate }}%
-          </div>
-          {% endif %}
-          {% if t.is_paid %}<div class="mt-2 badge bg-success rounded-pill"><i class="fas fa-check me-1"></i>Paye</div>{% else %}<div class="mt-2 badge bg-warning text-dark rounded-pill"><i class="fas fa-clock me-1"></i>En attente</div>{% endif %}
-        </div>
-      </div>
-      {% empty %}
-      <div class="col-12 text-center text-muted py-5"><i class="fas fa-wallet fa-3x mb-3 d-block"></i>Aucune information de paiement.</div>
-      {% endfor %}
-      {% if tranches and selected_enrollment %}
-      <div class="col-12">
-        <div class="tranche-card" style="border: 2px solid var(--primary);">
-          <div class="tranche-title"><i class="fas fa-fire me-2"></i>TOTAL</div>
-          <div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem;">Description: Reste à payer</div>
-          <div class="table-responsive mb-3">
-            <table class="w-100 text-center" style="font-size:0.85rem;">
-              <thead>
-                <tr>
-                  <th class="py-2 px-2" style="background:#e5e7eb;color:#334155;font-weight:700;">FRAIS SCOLARITÉ</th>
-                  <th class="py-2 px-2" style="background:#e5e7eb;color:#334155;font-weight:700;">AUTRE</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="py-2" style="background:#f3f4f6;">{{ total_requested|floatformat:3 }} DT</td>
-                  <td class="py-2" style="background:#f3f4f6;">0 DT</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="row g-2 text-center mb-2">
-            <div class="col-4">
-              <div class="amount-label" style="color:#14b8a6;">Le montant demandé</div>
-              <div class="amount-value amount-requested" style="font-size:1.45rem;">{{ total_requested|floatformat:3 }} DT</div>
-            </div>
-            <div class="col-4">
-              <div class="amount-label" style="color:#d946ef;">Le montant payé</div>
-              <div class="amount-value amount-paid" style="font-size:1.45rem;">{{ total_paid|floatformat:3 }} DT</div>
-            </div>
-            <div class="col-4">
-              <div class="amount-label" style="color:#f59e0b;">Le reste à payer</div>
-              <div class="amount-value {% if total_remaining <= 0 %}amount-paid{% else %}amount-remaining{% endif %}" style="font-size:1.45rem;">{{ total_remaining|floatformat:3 }} DT</div>
-            </div>
-          </div>
-          <div class="p-3 rounded-3" style="background:#38bdf8;color:#0f172a;font-size:0.8rem;line-height:1.45;">
-            <strong>Remarque:</strong> Le montant TTC est calculé après application du taux de réduction.
-            {% if selected_enrollment.tranches.all %}
-            <span class="d-block mt-1">Réduction appliquée sur le dossier de {{ selected_enrollment.student.get_full_name }}.</span>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Reste à recouvrer</div>
+      <div class="fs-4 fw-bold {% if grand_remaining > 0 %}text-warning{% endif %}">{{ grand_remaining|floatformat:0 }} DT</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Élèves en retard</div>
+      <div class="fs-4 fw-bold {% if overdue_count %}text-danger{% endif %}">{{ overdue_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Liste des élèves -->
+<div class="card-myedu mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="fas fa-users me-2"></i>Situation par élève</span>
+    <div class="d-flex gap-2 flex-wrap">
+      <select id="balanceClassFilter" class="form-select form-select-sm" style="max-width:220px;">
+        <option value="">— Choisir la classe —</option>
+        <option value="all">Toutes les classes</option>
+        {% for cl in classrooms %}<option value="{{ cl.pk }}">{{ cl }}</option>{% endfor %}
+      </select>
+      <input type="text" id="balanceSearch" class="form-control form-control-sm" style="max-width:220px;"
+             placeholder="Rechercher un élève…">
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-myedu mb-0" id="balanceTable">
+      <thead><tr>
+        <th class="text-start">Élève</th><th>Classe</th><th>Demandé</th><th>Payé</th><th>Reste</th><th>Situation</th><th class="text-end">Actions</th>
+      </tr></thead>
+      <tbody>
+        <tr id="balanceHintRow"><td colspan="7" class="text-center text-muted py-4">
+          <i class="fas fa-arrow-up me-2"></i>Choisissez une classe pour afficher les élèves.
+        </td></tr>
+        {% for row in overview %}
+        <tr class="balance-row" data-classroom="{{ row.enrollment.classroom_id|default:'' }}" hidden
+            {% if row.overdue %}style="background:var(--danger-tint, #fef2f2);"{% endif %}>
+          <td class="text-start">
+            <strong>{{ row.enrollment.student.get_full_name }}</strong>
+            <br><small class="text-muted">{{ row.enrollment.matricule }}</small>
+          </td>
+          <td>{{ row.enrollment.classroom }}</td>
+          <td>{{ row.requested|floatformat:0 }} DT</td>
+          <td class="text-success">{{ row.paid|floatformat:0 }} DT</td>
+          <td class="{% if row.remaining > 0 %}text-danger fw-semibold{% endif %}">{{ row.remaining|floatformat:0 }} DT</td>
+          <td>
+            {% if not row.has_tranches %}
+            <span class="badge bg-secondary">Aucune tranche</span>
+            {% elif row.overdue %}
+            <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>En retard</span>
+            {% elif row.remaining <= 0 %}
+            <span class="badge bg-success"><i class="fas fa-check me-1"></i>Soldé</span>
+            {% else %}
+            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>En cours</span>
             {% endif %}
-          </div>
-        </div>
-      </div>
-      {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <a href="?student={{ row.enrollment.pk }}" class="btn btn-sm btn-outline-myedu me-1" title="Voir le détail"><i class="fas fa-eye"></i></a>
+            <a href="{% url 'finance:manage_tranches' row.enrollment.pk %}" class="btn btn-sm btn-primary-myedu" title="Gérer les tranches"><i class="fas fa-cog"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Aucun élève actif.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if selected_enrollment %}
+<!-- Détail de l'élève sélectionné -->
+<div class="card-myedu mb-4" id="detail">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="fas fa-user-graduate me-2"></i>{{ selected_enrollment.student.get_full_name }} — {{ selected_enrollment.classroom }} · {{ selected_enrollment.matricule }}</span>
+    <div class="d-flex gap-2">
+      <a href="{% url 'finance:manage_tranches' selected_enrollment.pk %}" class="btn btn-sm btn-primary-myedu"><i class="fas fa-cog me-1"></i>Gérer les tranches</a>
+      <a href="{% url 'finance:my_balance' %}" class="btn btn-sm btn-outline-light"><i class="fas fa-times me-1"></i>Fermer</a>
     </div>
   </div>
+  <div class="p-3">
+    {% include "finance/_balance_detail.html" %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+(function () {
+  const classFilter = document.getElementById('balanceClassFilter');
+  const search = document.getElementById('balanceSearch');
+  const hintRow = document.getElementById('balanceHintRow');
+  const rows = document.querySelectorAll('#balanceTable tbody tr.balance-row');
+
+  function apply() {
+    const selectedClass = classFilter.value;
+    const term = search.value.toLowerCase();
+    let visible = 0;
+    rows.forEach(function (row) {
+      const classOk = selectedClass === 'all'
+        || (selectedClass && row.getAttribute('data-classroom') === selectedClass);
+      const searchOk = !term || row.textContent.toLowerCase().includes(term);
+      const show = classOk && searchOk;
+      row.hidden = !show;
+      if (show) visible++;
+    });
+    hintRow.hidden = Boolean(selectedClass) && (visible > 0 || Boolean(term) || selectedClass === 'all');
+    if (!selectedClass) hintRow.hidden = false;
+  }
+
+  classFilter.addEventListener('change', apply);
+  search.addEventListener('input', apply);
+})();
+</script>
+
+{% else %}
+<div class="page-subtitle">État des paiements de la scolarité</div>
+
+{% if not tranches %}
+<div class="card-myedu p-5 text-center text-muted">
+  <i class="fas fa-wallet fa-3x mb-3 d-block"></i>Aucune information de paiement pour le moment.
 </div>
 {% else %}
-<div class="row g-4">
-  {% for t in tranches %}
-  <div class="col-md-6">
-    <div class="tranche-card">
-      <div class="tranche-title"><i class="fas fa-coins me-2"></i>{{ t.label }}</div>
-      {% if t.description %}<div style="font-size:0.8rem;color:#64748b;margin-bottom:0.75rem;">Description: {{ t.description }}</div>{% endif %}
-      <table class="w-100 mb-3" style="font-size:0.85rem;">
-        <thead><tr>
-          <th class="py-1 px-2" style="background:#f1f5f9;border-radius:6px 0 0 6px;">FRAIS SCOLARITE</th>
-          <th class="py-1 px-2" style="background:#f1f5f9;border-radius:0 6px 6px 0;">AUTRE</th>
-        </tr></thead>
-        <tbody><tr>
-          <td class="text-center py-1">{{ t.school_fees }} DT</td>
-          <td class="text-center py-1">{{ t.other_fees }} DT</td>
-        </tr></tbody>
-      </table>
-      <div class="row g-2 text-center mb-3">
-        <div class="col-4">
-          <div class="amount-label">Montant demande</div>
-          <div class="amount-value amount-requested">{{ t.amount_requested }} DT</div>
-        </div>
-        <div class="col-4">
-          <div class="amount-label">Montant paye</div>
-          <div class="amount-value amount-paid">{{ t.amount_paid }} DT</div>
-        </div>
-        <div class="col-4">
-          <div class="amount-label">Reste a payer</div>
-          <div class="amount-value {% if t.remaining <= 0 %}amount-paid{% else %}amount-remaining{% endif %}">{{ t.remaining }} DT</div>
-        </div>
-      </div>
-      {% if t.reduction_rate > 0 %}
-      <div class="p-2 rounded-3" style="background:#e0f2fe;font-size:0.8rem;color:#0c4a6e;">
-        <strong>Remarque:</strong> Reduction appliquee de {{ t.reduction_rate }}%
-      </div>
-      {% endif %}
-      {% if t.is_paid %}<div class="mt-2 badge bg-success rounded-pill"><i class="fas fa-check me-1"></i>Paye</div>{% else %}<div class="mt-2 badge bg-warning text-dark rounded-pill"><i class="fas fa-clock me-1"></i>En attente</div>{% endif %}
-    </div>
-  </div>
-  {% empty %}
-  <div class="col-12 text-center text-muted py-5"><i class="fas fa-wallet fa-3x mb-3 d-block"></i>Aucune information de paiement.</div>
-  {% endfor %}
-  {% if tranches %}
-  <div class="col-md-6">
-    <div class="tranche-card" style="border: 2px solid var(--primary);">
-      <div class="tranche-title"><i class="fas fa-fire me-2"></i>TOTAL</div>
-      <div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem;">Reste a payer</div>
-      <div class="row g-2 text-center">
-        <div class="col-4">
-          <div class="amount-label">Total demande</div>
-          <div class="amount-value amount-requested">{{ total_requested }} DT</div>
-        </div>
-        <div class="col-4">
-          <div class="amount-label">Total paye</div>
-          <div class="amount-value amount-paid">{{ total_paid }} DT</div>
-        </div>
-        <div class="col-4">
-          <div class="amount-label">Reste total</div>
-          <div class="amount-value {% if total_remaining <= 0 %}amount-paid{% else %}amount-remaining{% endif %}">{{ total_remaining }} DT</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-</div>
+{% include "finance/_balance_detail.html" %}
+{% endif %}
 {% endif %}
 {% endblock %}

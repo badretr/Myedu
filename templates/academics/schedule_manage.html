@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Saisie emploi du temps - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Emploi du temps</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div class="page-title"><i class="fas fa-calendar-alt me-2"></i>Saisie de l'emploi du temps</div>
+  <div class="d-flex gap-2">
+    {% if classroom and grid %}
+    <a href="{% url 'academics:schedule_export' %}?classroom={{ classroom.pk }}" class="btn btn-outline-myedu btn-sm">
+      <i class="fas fa-image me-1"></i>Télécharger en image
+    </a>
+    {% endif %}
+    <a href="{% url 'academics:schedule_upload' %}" class="btn btn-outline-myedu btn-sm">
+      <i class="fas fa-upload me-1"></i>Ancien système (image)
+    </a>
+  </div>
+</div>
+<div class="page-subtitle">Journée de 8h à 17h — choisissez la matière de chaque créneau. Laissez « — » pour un créneau libre.</div>
+
+<form method="get" class="card-myedu p-3 mb-4 d-flex flex-row align-items-end gap-2 flex-wrap">
+  <div style="min-width:280px;">
+    <label class="form-label">Classe</label>
+    <select name="classroom" class="form-select" onchange="this.form.submit()">
+      <option value="">— Choisir une classe —</option>
+      {% for c in classrooms %}
+      <option value="{{ c.pk }}" {% if classroom and c.pk == classroom.pk %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if classroom %}
+{% if subjects %}
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="classroom" value="{{ classroom.pk }}">
+  <input type="hidden" name="action" value="save">
+  <div class="card-myedu p-3 mb-3">
+    <div class="table-responsive">
+      <table class="table table-myedu table-bordered mb-0" style="min-width:900px;">
+        <thead>
+          <tr>
+            <th style="width:90px;">Horaire</th>
+            {% for day, label in days %}<th class="text-center">{{ label }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in grid %}
+          {% if row.is_break %}
+          <tr style="background:#f1f5f9;">
+            <td class="fw-semibold text-nowrap">Pause</td>
+            <td colspan="{{ days|length }}" class="text-center fw-semibold text-muted">
+              <i class="fas fa-utensils me-2"></i>Pause déjeuner
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td class="fw-semibold text-nowrap">{{ row.hour }}h - {{ row.hour|add:1 }}h</td>
+            {% for cell in row.cells %}
+            <td>
+              <select name="cell_{{ cell.day }}_{{ row.hour }}" class="form-select form-select-sm">
+                <option value="">—</option>
+                {% for s in subjects %}
+                <option value="{{ s.pk }}|cours" {% if cell.value == s.pk|stringformat:"s"|add:"|cours" %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            {% endfor %}
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer l'emploi du temps</button>
+</form>
+{% else %}
+<div class="card-myedu p-4 text-center text-muted">
+  Cette classe n'a aucune matière. Ajoutez d'abord les matières dans le
+  <a href="{% url 'academics:classroom_detail' classroom.pk %}">détail de la classe</a>.
+</div>
+{% endif %}
+{% else %}
+<div class="card-myedu p-5 text-center text-muted">
+  <i class="fas fa-arrow-up fa-2x mb-3" style="color:#cbd5e1;"></i>
+  <div>Sélectionnez une classe pour saisir son emploi du temps.</div>
+</div>
+{% endif %}
+{% endblock %}

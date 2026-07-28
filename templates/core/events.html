@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Calendrier scolaire - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Calendrier scolaire</li>
+</ol></nav>
+<div class="page-title mb-3"><i class="fas fa-calendar-day me-2"></i>Calendrier scolaire</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter un événement</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="mb-3"><label class="form-label">Titre</label>
+          <input type="text" name="title" class="form-control" required placeholder="ex : Vacances d'hiver"></div>
+        <div class="mb-3"><label class="form-label">Type</label>
+          <select name="event_type" class="form-select">
+            <option value="vacances">Vacances</option>
+            <option value="examen">Examens</option>
+            <option value="reunion">Réunion parents-enseignants</option>
+            <option value="sortie">Sortie scolaire</option>
+            <option value="autre" selected>Autre</option>
+          </select></div>
+        <div class="row g-2 mb-3">
+          <div class="col-6"><label class="form-label">Début</label><input type="date" name="start_date" class="form-control" required></div>
+          <div class="col-6"><label class="form-label">Fin (optionnel)</label><input type="date" name="end_date" class="form-control"></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="2"></textarea></div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-plus me-2"></i>Ajouter et annoncer</button>
+        <div class="form-text mt-2">Les parents et les élèves reçoivent une notification automatiquement.</div>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="section-title">À venir</div>
+    {% for ev in upcoming %}
+    <div class="msg-card mb-2 d-flex justify-content-between align-items-start gap-2">
+      <div>
+        <div class="msg-card-title">
+          <span class="badge-grade grade-good me-1">{{ ev.start_date|date:"d/m/Y" }}{% if ev.end_date %} → {{ ev.end_date|date:"d/m/Y" }}{% endif %}</span>
+          {{ ev.title }}
+        </div>
+        <div class="msg-card-meta">{{ ev.get_event_type_display }}{% if ev.description %} — {{ ev.description }}{% endif %}</div>
+      </div>
+      <form method="post" onsubmit="return confirm('Supprimer cet événement ?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" name="event_id" value="{{ ev.pk }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+      </form>
+    </div>
+    {% empty %}
+    <div class="card-myedu p-4 text-center text-muted mb-3">Aucun événement à venir.</div>
+    {% endfor %}
+
+    {% if past %}
+    <div class="section-title mt-4">Passés</div>
+    {% for ev in past %}
+    <div class="msg-card mb-2 d-flex justify-content-between align-items-start gap-2" style="opacity:0.7;">
+      <div>
+        <div class="msg-card-title">
+          <span class="badge-grade grade-na me-1">{{ ev.start_date|date:"d/m/Y" }}</span>
+          {{ ev.title }}
+        </div>
+        <div class="msg-card-meta">{{ ev.get_event_type_display }}</div>
+      </div>
+      <form method="post" onsubmit="return confirm('Supprimer cet événement ?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" name="event_id" value="{{ ev.pk }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+      </form>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

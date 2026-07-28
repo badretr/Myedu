@@ -7,7 +7,10 @@
 </ol></nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div class="page-title">Gestion des comptes</div>
-  <a href="{% url 'accounts:user_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Créer un compte élève</a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'accounts:teacher_create' %}" class="btn btn-outline-myedu"><i class="fas fa-chalkboard-teacher me-2"></i>Créer un enseignant</a>
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Créer un compte élève</a>
+  </div>
 </div>
 <div class="card-myedu">
   <table class="table table-myedu mb-0">
@@ -26,6 +29,9 @@
           {% else %}<span class="badge bg-danger">Inactif</span>{% endif %}
         </td>
         <td>
+          {% if u.role == 'student' %}
+          <a href="{% url 'academics:student_history' u.pk %}" class="btn btn-sm btn-outline-secondary rounded-pill me-1" title="Parcours de l'élève"><i class="fas fa-route"></i></a>
+          {% endif %}
           <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-primary rounded-pill me-1"><i class="fas fa-edit"></i></a>
           <a href="{% url 'accounts:user_delete' u.pk %}" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-trash"></i></a>
         </td>

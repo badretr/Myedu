@@ -17,6 +17,8 @@ echo Creation du superadmin...
 
 echo ====================================
 echo   Installation terminee!
+echo   Creez un fichier .env a la racine avec POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+echo   Exemple: copier .env.example vers .env puis adapter les valeurs
 echo   Lancez: .venv\Scripts\python.exe manage.py runserver
 echo   Connexion: http://127.0.0.1:8000
 echo   Admin: http://127.0.0.1:8000/admin/

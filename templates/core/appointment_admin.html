@@ -1,0 +1,50 @@
+﻿{% extends "base.html" %}
+{% block title %}Gestion des rendez-vous - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Rendez-vous administration</li>
+</ol></nav>
+
+<div class="page-title mb-3">Demandes de rendez-vous</div>
+<div class="card-myedu">
+  <table class="table table-myedu mb-0">
+    <thead>
+      <tr>
+        <th>Parent</th>
+        <th>Date demandée</th>
+        <th>Motif</th>
+        <th>Statut</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for appt in appointments %}
+      <tr>
+        <td><strong>{{ appt.parent.get_full_name }}</strong></td>
+        <td>{{ appt.requested_datetime|date:"d/m/Y H:i" }}</td>
+        <td style="max-width:320px;white-space:pre-wrap;overflow-wrap:anywhere;">{{ appt.reason|default:"-" }}</td>
+        <td>
+          {% if appt.status == 'pending' %}<span class="badge bg-warning text-dark">En attente</span>
+          {% elif appt.status == 'accepted' %}<span class="badge bg-success">Accepté</span>
+          {% else %}<span class="badge bg-danger">Refusé</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" class="d-grid gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="appointment_id" value="{{ appt.pk }}">
+            <textarea name="admin_notes" class="form-control form-control-sm" rows="2" placeholder="Note pour le parent">{{ appt.admin_notes }}</textarea>
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="accepted" class="btn btn-sm btn-success"><i class="fas fa-check me-1"></i>Accepter</button>
+              <button type="submit" name="action" value="rejected" class="btn btn-sm btn-danger"><i class="fas fa-times me-1"></i>Refuser</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">Aucune demande de rendez-vous.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

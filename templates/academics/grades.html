@@ -5,7 +5,23 @@
   <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
   <li class="breadcrumb-item active">Mes resultats</li>
 </ol></nav>
-<div class="page-title"><i class="fas fa-chart-bar me-2"></i>Mes Notes</div>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="page-title"><i class="fas fa-chart-bar me-2"></i>Mes Notes</div>
+  {% if enrollment %}
+  <div class="d-flex gap-2 flex-wrap">
+    {% if semester_s1 %}
+    <a href="{% url 'academics:bulletin_pdf' enrollment.pk %}?semester={{ semester_s1.pk }}" class="btn btn-outline-myedu btn-sm">
+      <i class="fas fa-file-pdf me-1"></i>Bulletin S1
+    </a>
+    {% endif %}
+    {% if semester_s2 %}
+    <a href="{% url 'academics:bulletin_pdf' enrollment.pk %}?semester={{ semester_s2.pk }}" class="btn btn-outline-myedu btn-sm">
+      <i class="fas fa-file-pdf me-1"></i>Bulletin S2
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
 <div class="page-subtitle">Consulter la liste des notes par periode</div>
 <ul class="nav nav-tabs mb-4" id="gradesTabs">
   <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#s1">SEMESTRE 1</a></li>
@@ -23,7 +39,6 @@
           <th style="background:#3b82f6;">CC</th>
           <th style="background:#6366f1;">DS</th>
           <th style="background:#10b981;">EXAMEN</th>
-          <th style="background:#f59e0b;">CONTROLE</th>
           <th style="background:#1e293b;">MOYENNE</th>
         </tr></thead>
         <tbody>
@@ -35,11 +50,22 @@
             <td>{% if g.cc is not None %}<span class="badge-grade {% if g.cc >= 10 %}grade-good{% elif g.cc >= 7 %}grade-ok{% else %}grade-bad{% endif %}">{{ g.cc }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
             <td>{% if g.ds is not None %}<span class="badge-grade {% if g.ds >= 10 %}grade-good{% elif g.ds >= 7 %}grade-ok{% else %}grade-bad{% endif %}">{{ g.ds }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
             <td>{% if g.exam is not None %}<span class="badge-grade {% if g.exam >= 10 %}grade-good{% elif g.exam >= 7 %}grade-ok{% else %}grade-bad{% endif %}">{{ g.exam }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
-            <td>{% if g.controle is not None %}<span class="badge-grade grade-ok">{{ g.controle }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
             <td>{% if g.average is not None %}<span class="badge-grade {% if g.average >= 10 %}grade-good{% elif g.average >= 7 %}grade-ok{% else %}grade-bad{% endif %}"><strong>{{ g.average }}</strong></span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" class="text-start"><strong>Moyenne générale</strong></td>
+            <td>
+              {% if general_average_s1 is not None %}
+              <span class="badge-grade {% if general_average_s1 >= 10 %}grade-good{% elif general_average_s1 >= 7 %}grade-ok{% else %}grade-bad{% endif %}"><strong>{{ general_average_s1 }}</strong></span>
+              {% else %}
+              <span class="badge-grade grade-na">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     {% else %}
@@ -53,7 +79,7 @@
         <thead><tr>
           <th>N°</th><th class="text-start">MATIERE</th><th>COEF</th>
           <th style="background:#3b82f6;">CC</th><th style="background:#6366f1;">DS</th>
-          <th style="background:#10b981;">EXAMEN</th><th style="background:#f59e0b;">CONTROLE</th>
+          <th style="background:#10b981;">EXAMEN</th>
           <th style="background:#1e293b;">MOYENNE</th>
         </tr></thead>
         <tbody>
@@ -65,11 +91,22 @@
             <td>{% if g.cc is not None %}<span class="badge-grade {% if g.cc >= 10 %}grade-good{% elif g.cc >= 7 %}grade-ok{% else %}grade-bad{% endif %}">{{ g.cc }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
             <td>{% if g.ds is not None %}<span class="badge-grade {% if g.ds >= 10 %}grade-good{% elif g.ds >= 7 %}grade-ok{% else %}grade-bad{% endif %}">{{ g.ds }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
             <td>{% if g.exam is not None %}<span class="badge-grade {% if g.exam >= 10 %}grade-good{% elif g.exam >= 7 %}grade-ok{% else %}grade-bad{% endif %}">{{ g.exam }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
-            <td>{% if g.controle is not None %}<span class="badge-grade grade-ok">{{ g.controle }}</span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
             <td>{% if g.average is not None %}<span class="badge-grade {% if g.average >= 10 %}grade-good{% elif g.average >= 7 %}grade-ok{% else %}grade-bad{% endif %}"><strong>{{ g.average }}</strong></span>{% else %}<span class="badge-grade grade-na">-</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" class="text-start"><strong>Moyenne générale</strong></td>
+            <td>
+              {% if general_average_s2 is not None %}
+              <span class="badge-grade {% if general_average_s2 >= 10 %}grade-good{% elif general_average_s2 >= 7 %}grade-ok{% else %}grade-bad{% endif %}"><strong>{{ general_average_s2 }}</strong></span>
+              {% else %}
+              <span class="badge-grade grade-na">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     {% else %}

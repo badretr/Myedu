@@ -6,7 +6,7 @@
   <li class="breadcrumb-item active">Mon Profil</li>
 </ol></nav>
 <div class="page-title">Mon Profil</div>
-<div class="row g-4 mt-1">
+<div class="row g-4 mt-1 form-page-center" style="max-width:1100px;">
   <div class="col-md-4">
     <div class="card-myedu p-4 text-center">
       {% if user.profile_picture %}
@@ -22,6 +22,11 @@
           <div class="fw-bold text-primary">{{ user.linked_enrollment.classroom }}</div>
           <div class="text-muted">Mat: {{ user.linked_enrollment.matricule }}</div>
         </div>
+      {% endif %}
+      {% if user.internal_contract %}
+        <a href="{{ user.internal_contract.url }}" target="_blank" class="btn btn-outline-myedu btn-sm mt-3 w-100">
+          <i class="fas fa-file-contract me-2"></i>Contrat interne signé
+        </a>
       {% endif %}
     </div>
   </div>

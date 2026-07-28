@@ -6,31 +6,76 @@
   <li class="breadcrumb-item active">Paiements - {{ enrollment.student.get_full_name }}</li>
 </ol></nav>
 <div class="page-title">Paiements de {{ enrollment.student.get_full_name }}</div>
+
 <div class="row g-4">
   <div class="col-md-8">
+    <div class="card-myedu p-4 mb-4">
+      <div class="section-title mb-3">Paramètres de paiement</div>
+      <form method="post" class="row g-3 align-items-end">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="set_payment_settings">
+        <div class="col-md-4">
+          <label class="form-label">Mode de paiement</label>
+          <select name="payment_method" class="form-select">
+            <option value="">-- Non défini --</option>
+            <option value="comptant" {% if enrollment.payment_method == "comptant" %}selected{% endif %}>Comptant</option>
+            <option value="cheque" {% if enrollment.payment_method == "cheque" %}selected{% endif %}>Chèque</option>
+            <option value="traite" {% if enrollment.payment_method == "traite" %}selected{% endif %}>Traite bancaire</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Nombre de tranches autorisées</label>
+          <input type="number" name="max_installments" class="form-control" min="1" value="{{ enrollment.max_installments }}">
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer</button>
+        </div>
+      </form>
+    </div>
     {% for t in tranches %}
     <div class="tranche-card mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="tranche-title">{{ t.label }}</div>
-        {% if t.is_paid %}
-          <span class="badge bg-success">Paye</span>
-        {% else %}
-          <form method="post" class="d-inline">{% csrf_token %}
-            <input type="hidden" name="action" value="pay">
-            <input type="hidden" name="tranche_id" value="{{ t.pk }}">
-            <button type="submit" class="btn btn-sm btn-success">Marquer paye</button>
-          </form>
-        {% endif %}
+        <div class="d-flex gap-2 align-items-center">
+          {% if t.is_paid %}
+            <span class="badge bg-success">Paye</span>
+          {% else %}
+            <form method="post" class="d-inline">{% csrf_token %}
+              <input type="hidden" name="action" value="pay">
+              <input type="hidden" name="tranche_id" value="{{ t.pk }}">
+              <button type="submit" class="btn btn-sm btn-success">Marquer paye</button>
+            </form>
+          {% endif %}
+        </div>
       </div>
       <div>Demande: {{ t.amount_requested }} DT &nbsp;|&nbsp; Paye: {{ t.amount_paid }} DT &nbsp;|&nbsp; Reste: {{ t.remaining }} DT</div>
+      {% if enrollment.payment_method and enrollment.payment_method != "comptant" %}
+      <div class="mt-2 d-flex align-items-center gap-2">
+        {% if t.is_bank_validated %}
+          <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>{{ enrollment.get_payment_method_display }} validé par la banque</span>
+        {% else %}
+          <span class="badge bg-warning text-dark"><i class="fas fa-hourglass-half me-1"></i>{{ enrollment.get_payment_method_display }} en attente de validation</span>
+        {% endif %}
+        <form method="post" class="d-inline">{% csrf_token %}
+          <input type="hidden" name="action" value="toggle_validated">
+          <input type="hidden" name="tranche_id" value="{{ t.pk }}">
+          <button type="submit" class="btn btn-sm btn-outline-myedu">
+            {% if t.is_bank_validated %}Annuler la validation{% else %}Valider{% endif %}
+          </button>
+        </form>
+      </div>
+      {% endif %}
     </div>
     {% empty %}
     <div class="text-muted">Aucune tranche definie.</div>
     {% endfor %}
   </div>
   <div class="col-md-4">
-    <div class="card-myedu p-4">
+    <div class="card-myedu p-4 form-page-center">
       <div class="section-title">Ajouter une tranche</div>
+      {% if enrollment.max_installments and tranches|length >= enrollment.max_installments %}
+        <div class="text-muted small">Nombre maximum de tranches atteint ({{ enrollment.max_installments }}).</div>
+      {% else %}
       <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="add">
@@ -42,6 +87,7 @@
         <div class="mb-2"><label class="form-label">Taux de reduction (%)</label><input type="number" name="reduction_rate" class="form-control" step="0.1" value="0"></div>
         <button type="submit" class="btn btn-primary-myedu w-100 mt-2"><i class="fas fa-plus me-2"></i>Ajouter</button>
       </form>
+      {% endif %}
     </div>
   </div>
 </div>

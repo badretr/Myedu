@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load dict_filters l10n %}
+{% block title %}Resultats - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Resultats</li>
+</ol></nav>
+<div class="page-title"><i class="fas fa-chart-bar me-2"></i>Resultats</div>
+<div class="page-subtitle">Selectionner une classe et un eleve pour saisir les notes</div>
+
+<div class="card-myedu p-4 mb-4 form-page-center">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Classe</label>
+      <select name="classroom" class="form-select" onchange="this.form.submit()" required>
+        <option value="">-- Selectionner --</option>
+        {% for c in classrooms %}<option value="{{ c.pk }}" {% if c.pk|stringformat:"s" == selected_classroom %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if selected_enrollment %}
+    <div class="col-md-4">
+      <label class="form-label">Eleve</label>
+      <select name="student" class="form-select" onchange="this.form.submit()" required>
+        <option value="">-- Selectionner --</option>
+        {% for enr in enrollments %}<option value="{{ enr.pk }}" {% if enr.pk|stringformat:"s" == selected_enrollment %}selected{% endif %}>{{ enr.student.get_full_name }} ({{ enr.matricule }})</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    {% if selected_enrollment %}
+    <div class="col-md-4">
+      <label class="form-label">Semestre</label>
+      <select name="semester" class="form-select" onchange="this.form.submit()" required>
+        <option value="">-- Selectionner --</option>
+        {% for sem in semesters %}<option value="{{ sem.pk }}" {% if sem.pk|stringformat:"s" == selected_semester %}selected{% endif %}>{{ sem.get_label_display }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+  </form>
+</div>
+
+{% if selected_classroom and not selected_enrollment %}
+
+{% if class_stats %}
+<div class="row g-3 mb-4 form-page-center">
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Moyenne de classe</div>
+      <div class="fs-4 fw-bold {% if class_stats.avg >= 10 %}text-success{% else %}text-danger{% endif %}">{{ class_stats.avg }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Meilleure moyenne</div>
+      <div class="fs-4 fw-bold text-success">{{ class_stats.best }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Moyenne la plus faible</div>
+      <div class="fs-4 fw-bold text-danger">{{ class_stats.worst }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-myedu p-3 text-center">
+      <div class="info-label">Élèves notés</div>
+      <div class="fs-4 fw-bold">{{ class_stats.graded }} / {{ class_stats.count }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card-myedu form-page-center mb-4">
+  <div class="card-header"><i class="fas fa-users me-2"></i>Etudiants de la classe — classement</div>
+  <table class="table table-myedu mb-0">
+    <thead><tr>
+      <th style="width:70px;">Rang</th><th class="text-start">Eleve</th><th>Matricule</th><th>Moyenne generale</th><th></th>
+    </tr></thead>
+    <tbody>
+      {% for row in student_averages %}
+      <tr>
+        <td>
+          {% if row.rank %}
+          <span class="badge-grade {% if row.rank == 1 %}grade-good{% else %}grade-na{% endif %}">{{ row.rank }}{% if row.rank == 1 %}er{% else %}e{% endif %}</span>
+          {% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td class="text-start">{{ row.enrollment.student.get_full_name }}</td>
+        <td>{{ row.enrollment.matricule }}</td>
+        <td>
+          {% if row.average is not None %}
+          <span class="badge-grade {% if row.average >= 10 %}grade-good{% elif row.average >= 7 %}grade-ok{% else %}grade-bad{% endif %}"><strong>{{ row.average }}</strong></span>
+          {% else %}
+          <span class="badge-grade grade-na">-</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="?classroom={{ selected_classroom }}&student={{ row.enrollment.pk }}{% if default_semester %}&semester={{ default_semester.pk }}{% endif %}" class="btn btn-outline-myedu btn-sm">
+            <i class="fas fa-eye me-1"></i>Voir les notes
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted">Aucun eleve dans cette classe.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if subject_stats %}
+<div class="card-myedu form-page-center">
+  <div class="card-header"><i class="fas fa-book me-2"></i>Statistiques par matière</div>
+  <table class="table table-myedu mb-0">
+    <thead><tr>
+      <th class="text-start">Matière</th><th>Moyenne de classe</th><th>Meilleure note</th><th>Note la plus faible</th>
+    </tr></thead>
+    <tbody>
+      {% for st in subject_stats %}
+      <tr>
+        <td class="text-start">{{ st.subject.name }}</td>
+        <td><span class="badge-grade {% if st.avg >= 10 %}grade-good{% else %}grade-bad{% endif %}">{{ st.avg }}</span></td>
+        <td class="text-success fw-semibold">{{ st.best }}</td>
+        <td class="text-danger fw-semibold">{{ st.worst }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+
+{% if enrollment and selected_semester %}
+<div class="card-myedu form-page-center">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><strong>{{ enrollment.student.get_full_name }}</strong> - {{ enrollment.matricule }}</div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% if student_rank %}
+      <span class="badge-grade grade-good"><i class="fas fa-trophy me-1"></i>Rang : {{ student_rank }}{% if student_rank == 1 %}er{% else %}e{% endif %} / {{ class_size }}</span>
+      {% endif %}
+      {% if sem_class_avg %}
+      <span class="badge-grade grade-na">Moyenne de classe : {{ sem_class_avg }}</span>
+      {% endif %}
+      <a href="{% url 'academics:bulletin_pdf' enrollment.pk %}?semester={{ selected_semester }}" class="btn btn-outline-myedu btn-sm">
+        <i class="fas fa-file-pdf me-1"></i>Bulletin PDF
+      </a>
+      <a href="?classroom={{ selected_classroom }}" class="btn btn-outline-myedu btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Retour a la liste
+      </a>
+    </div>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="classroom" value="{{ selected_classroom }}">
+    <input type="hidden" name="student" value="{{ selected_enrollment }}">
+    <input type="hidden" name="semester" value="{{ selected_semester }}">
+    <table class="table table-myedu mb-0">
+      <thead><tr>
+        <th class="text-start">Matiere</th><th>Coef.</th>
+        <th>CC</th><th>DS</th><th>Examen</th>
+      </tr></thead>
+      <tbody>
+        {% for subj in subjects %}
+        {% with grade=grades_by_subject|get_item:subj.pk %}
+        <tr>
+          <td class="text-start"><strong>{{ subj.name }}</strong></td>
+          <td>{{ subj.coefficient }}</td>
+          <td><input type="number" name="cc_{{ subj.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ grade.cc|default:''|unlocalize }}"></td>
+          <td><input type="number" name="ds_{{ subj.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ grade.ds|default:''|unlocalize }}"></td>
+          <td><input type="number" name="exam_{{ subj.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ grade.exam|default:''|unlocalize }}"></td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted">Aucune matière pour cette classe.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="text-start"><strong>Moyenne générale</strong></td>
+          <td></td><td></td><td></td>
+          <td>
+            {% if general_average is not None %}
+            <span class="badge-grade {% if general_average >= 10 %}grade-good{% elif general_average >= 7 %}grade-ok{% else %}grade-bad{% endif %}"><strong>{{ general_average }}</strong></span>
+            {% else %}
+            <span class="badge-grade grade-na">-</span>
+            {% endif %}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="p-3">
+      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer les notes</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

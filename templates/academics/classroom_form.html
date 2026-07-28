@@ -1,29 +1,46 @@
 ﻿{% extends "base.html" %}
-{% block title %}{% if classroom %}Modifier la classe - Myedu{% else %}Nouvelle classe - Myedu{% endif %}{% endblock %}
+{% block title %}{% if classroom %}Modifier la classe - Myedu{% else %}Créer une nouvelle classe - Myedu{% endif %}{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
   <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
-  <li class="breadcrumb-item active">{% if classroom %}Modifier{% else %}Nouvelle classe{% endif %}</li>
+  <li class="breadcrumb-item active">{% if classroom %}Modifier{% else %}Créer une nouvelle classe{% endif %}</li>
 </ol></nav>
-<div class="card-myedu p-4" style="max-width:600px;">
-  <div class="section-title">{% if classroom %}Modifier une classe{% else %}Creer une classe{% endif %}</div>
-  <form method="post">
+<div class="card-myedu p-4 form-page-center">
+  <div class="section-title">{% if classroom %}Modifier la classe{% else %}Créer une nouvelle classe{% endif %}</div>
+  <form method="post" id="classroom-form">
     {% csrf_token %}
-    <div class="mb-3"><label class="form-label">Nom</label><input type="text" name="name" class="form-control" required placeholder="ex: 4eme Annee Informatique" value="{{ classroom.name|default:'' }}"></div>
-    <div class="mb-3"><label class="form-label">Specialite</label><input type="text" name="specialty" class="form-control" placeholder="ex: Cloud et Reseaux" value="{{ classroom.specialty|default:'' }}"></div>
-    <div class="mb-3"><label class="form-label">Cycle</label><input type="text" name="cycle" class="form-control" placeholder="ex: Ingenieur" value="{{ classroom.cycle|default:'' }}"></div>
-    <div class="mb-3"><label class="form-label">Groupe</label><input type="text" name="group" class="form-control" placeholder="ex: Gr A" value="{{ classroom.group|default:'' }}"></div>
     <div class="mb-3">
-      <label class="form-label">Annee academique</label>
-      <select name="academic_year" class="form-select">
-        <option value="">-- Selectionner --</option>
-        {% for y in academic_years %}
-          <option value="{{ y.pk }}" {% if classroom and classroom.academic_year and classroom.academic_year.pk == y.pk %}selected{% endif %}>{{ y }}</option>
+      <label class="form-label">Nom de la classe</label>
+      <input type="text" name="name" class="form-control" required placeholder="ex: 3A, 4Sc, 2E" value="{{ classroom.name|default:'' }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Niveau</label>
+      <select name="level" id="level-select" class="form-select" required>
+        <option value="">-- Sélectionner un niveau --</option>
+        {% for level in levels %}
+          <option value="{{ level }}" {% if classroom and classroom.name == level %}selected{% endif %}>{{ level }}</option>
         {% endfor %}
       </select>
     </div>
+    <div class="mb-3">
+      <label class="form-label">Année scolaire</label>
+      <select name="academic_year" class="form-select">
+        <option value="">-- Sélectionner --</option>
+        {% for y in academic_years %}
+          <option value="{{ y.pk }}" {% if classroom and classroom.academic_year and classroom.academic_year.pk == y.pk %}selected{% elif not classroom and y.is_current %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Régime de l'année scolaire</label>
+      <select name="semester_count" class="form-select">
+        <option value="2" {% if current_semester_count|default:2 == 2 %}selected{% endif %}>Régime semestriel (2 semestres)</option>
+        <option value="3" {% if current_semester_count == 3 %}selected{% endif %}>Régime trimestriel (3 trimestres)</option>
+      </select>
+      <div class="form-text">{% if classroom %}Les périodes manquantes seront créées ; les périodes existantes ne sont jamais supprimées.{% else %}Les périodes seront créées automatiquement avec des dates par défaut (modifiables ensuite dans l'administration Django).{% endif %}</div>
+    </div>
     <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>{% if classroom %}Enregistrer{% else %}Creer{% endif %}</button>
+      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>{% if classroom %}Enregistrer{% else %}Créer{% endif %}</button>
       <a href="{% url 'academics:classroom_list' %}" class="btn btn-outline-myedu">Annuler</a>
     </div>
   </form>

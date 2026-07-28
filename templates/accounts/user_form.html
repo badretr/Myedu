@@ -1,28 +1,55 @@
 ﻿{% extends "base.html" %}
 {% block title %}{{ title }} - Myedu{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
-  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
-  <li class="breadcrumb-item"><a href="{% url 'accounts:user_list' %}">Comptes</a></li>
-  <li class="breadcrumb-item active">{{ title }}</li>
-</ol></nav>
-<div class="page-title">{{ title }}</div>
-<div class="card-myedu p-4 mt-3" style="max-width:700px;">
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <div class="row g-3">
-      {% for field in form %}
-        <div class="col-md-6">
-          <label class="form-label">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
-        </div>
-      {% endfor %}
-    </div>
-    <div class="mt-4 d-flex gap-2">
-      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer</button>
-      <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-myedu">Annuler</a>
-    </div>
-  </form>
+<div class="form-page-center">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'accounts:user_list' %}">Comptes</a></li>
+    <li class="breadcrumb-item active">{{ title }}</li>
+  </ol></nav>
+  <div class="page-title">{{ title }}</div>
+  <div class="card-myedu p-4 mt-3">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="col-md-6">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer</button>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-myedu">Annuler</a>
+      </div>
+    </form>
+  </div>
 </div>
+<script>
+(function () {
+  // Filtre les matières selon les classes sélectionnées
+  const classroomSelect = document.getElementById('id_classrooms');
+  const subjectSelects = ['id_subjects']
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if (!classroomSelect || !subjectSelects.length) return;
+
+  function filterSubjects() {
+    const selectedClassrooms = Array.from(classroomSelect.selectedOptions).map((o) => o.value);
+    subjectSelects.forEach((select) => {
+      Array.from(select.options).forEach((option) => {
+        const classroomId = option.getAttribute('data-classroom');
+        const visible = option.selected
+          || (selectedClassrooms.length > 0 && selectedClassrooms.includes(classroomId));
+        option.hidden = !visible;
+      });
+    });
+  }
+
+  classroomSelect.addEventListener('change', filterSubjects);
+  filterSubjects();
+})();
+</script>
 {% endblock %}

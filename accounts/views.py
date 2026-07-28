@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from .forms import LoginForm, CustomUserCreationForm, CustomUserEditForm
+from .forms import LoginForm, CustomUserCreationForm, TeacherCreationForm, CustomUserEditForm, AdminUserEditForm, TeacherEditForm
 from .models import CustomUser
 
 
@@ -40,7 +40,7 @@ def profile_view(request):
 def user_list(request):
     if not request.user.is_admin_user:
         return redirect('core:home')
-    users = CustomUser.objects.filter(role__in=['admin', 'student']).order_by('role', 'last_name')
+    users = CustomUser.objects.filter(role__in=['admin', 'student', 'teacher']).order_by('role', 'last_name')
     return render(request, 'accounts/user_list.html', {'users': users})
 
 
@@ -57,11 +57,24 @@ def user_create(request):
 
 
 @login_required
+def teacher_create(request):
+    if not request.user.is_admin_user:
+        return redirect('core:home')
+    form = TeacherCreationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Compte enseignant créé avec succès.')
+        return redirect('accounts:user_list')
+    return render(request, 'accounts/user_form.html', {'form': form, 'title': 'Créer un compte enseignant'})
+
+
+@login_required
 def user_edit(request, pk):
     if not request.user.is_admin_user:
         return redirect('core:home')
     user = get_object_or_404(CustomUser, pk=pk)
-    form = CustomUserEditForm(request.POST or None, request.FILES or None, instance=user)
+    form_class = TeacherEditForm if user.role == 'teacher' else AdminUserEditForm
+    form = form_class(request.POST or None, request.FILES or None, instance=user)
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, 'Compte modifié avec succès.')

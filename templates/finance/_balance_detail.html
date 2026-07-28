@@ -1,0 +1,101 @@
+<!-- Synthèse -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4">
+    <div class="card-myedu p-3 text-center" style="background:#f8fafc;">
+      <div class="info-label">Montant demandé</div>
+      <div class="fs-4 fw-bold">{{ total_requested|floatformat:0 }} DT</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="card-myedu p-3 text-center" style="background:#f0fdf4;">
+      <div class="info-label">Montant payé</div>
+      <div class="fs-4 fw-bold text-success">{{ total_paid|floatformat:0 }} DT</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card-myedu p-3 text-center" style="background:{% if total_remaining > 0 %}#fffbeb{% else %}#f0fdf4{% endif %};">
+      <div class="info-label">Reste à payer</div>
+      <div class="fs-4 fw-bold {% if total_remaining > 0 %}text-warning{% else %}text-success{% endif %}">{{ total_remaining|floatformat:0 }} DT</div>
+    </div>
+  </div>
+</div>
+
+<!-- Progression -->
+{% if total_requested > 0 %}
+<div class="mb-4">
+  <div class="d-flex justify-content-between mb-1" style="font-size:0.8rem;color:var(--muted,#64748b);">
+    <span>Progression du paiement</span>
+    <span class="fw-semibold">{% widthratio total_paid total_requested 100 %}%</span>
+  </div>
+  <div class="progress" style="height:10px;border-radius:6px;">
+    <div class="progress-bar {% if total_remaining <= 0 %}bg-success{% else %}bg-primary{% endif %}"
+         style="width:{% widthratio total_paid total_requested 100 %}%;"></div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Services souscrits -->
+{% if extra_services %}
+<div class="mb-3">
+  {% for s in extra_services %}
+  <span class="badge-grade grade-good me-2">
+    {% if s.service_type == 'cantine' %}<i class="fas fa-utensils me-1"></i>{% else %}<i class="fas fa-bus me-1"></i>{% endif %}
+    {{ s.get_service_type_display }} — {{ s.monthly_fee }} DT/mois
+  </span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Tranches -->
+<div class="table-responsive">
+  <table class="table table-myedu mb-0">
+    <thead><tr>
+      <th class="text-start">Tranche</th><th>Échéance</th><th>Frais scolarité</th><th>Autres frais</th>
+      <th>Demandé</th><th>Payé</th><th>Reste</th><th>Statut</th><th class="text-end">Reçu</th>
+    </tr></thead>
+    <tbody>
+      {% for t in tranches %}
+      <tr {% if t.due_date and t.due_date < today and not t.is_paid %}style="background:var(--danger-tint, #fef2f2);"{% endif %}>
+        <td class="text-start">
+          <strong>{{ t.label }}</strong>
+          {% if t.description %}<br><small class="text-muted">{{ t.description }}</small>{% endif %}
+          {% if t.reduction_rate > 0 %}<br><small class="text-info"><i class="fas fa-tag me-1"></i>Réduction {{ t.reduction_rate }}%</small>{% endif %}
+        </td>
+        <td>
+          {{ t.due_date|date:"d/m/Y"|default:"—" }}
+          {% if t.due_date and t.due_date < today and not t.is_paid %}
+          <br><small class="text-danger fw-semibold">En retard</small>
+          {% endif %}
+        </td>
+        <td>{{ t.school_fees }} DT</td>
+        <td>{{ t.other_fees }} DT</td>
+        <td class="fw-semibold">{{ t.amount_requested }} DT</td>
+        <td class="text-success">{{ t.amount_paid }} DT</td>
+        <td class="{% if t.remaining > 0 %}text-danger fw-semibold{% endif %}">{{ t.remaining }} DT</td>
+        <td>
+          {% if t.is_paid %}
+          <span class="badge bg-success"><i class="fas fa-check me-1"></i>Payée{% if t.paid_at %}<br>le {{ t.paid_at|date:"d/m/Y" }}{% endif %}</span>
+          {% if t.is_bank_validated %}<span class="badge bg-info text-dark d-block mt-1">Banque OK</span>{% endif %}
+          {% else %}
+          <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>En attente</span>
+          {% endif %}
+        </td>
+        <td class="text-end">
+          {% if t.amount_paid > 0 %}
+          <a href="{% url 'finance:receipt_pdf' t.pk %}" class="btn btn-sm btn-outline-myedu" title="Télécharger le reçu"><i class="fas fa-receipt"></i></a>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="fw-bold" style="background:#f8fafc;">
+        <td class="text-start" colspan="4">TOTAL</td>
+        <td>{{ total_requested|floatformat:0 }} DT</td>
+        <td class="text-success">{{ total_paid|floatformat:0 }} DT</td>
+        <td class="{% if total_remaining > 0 %}text-danger{% endif %}">{{ total_remaining|floatformat:0 }} DT</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

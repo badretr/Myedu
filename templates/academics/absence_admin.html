@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Gestion des absences - {{ classroom }} - Myedu{% endblock %}
+{% block extra_css %}
+<style>
+.session-row.is-absent { background: var(--danger-tint); }
+.session-row td { vertical-align: middle; }
+.session-row .hours-input, .session-row .justif-input { transition: opacity 0.15s; }
+.session-row:not(.is-absent) .hours-input, .session-row:not(.is-absent) .justif-input { opacity: 0.4; }
+</style>
+{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_detail' classroom.pk %}">{{ classroom }}</a></li>
+  <li class="breadcrumb-item active">Absences</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div class="page-title mb-0">
+    <i class="fas fa-calendar-times me-2" style="color:var(--danger);"></i>
+    Registre d'absences — {{ classroom }}
+  </div>
+  <a href="{% url 'academics:classroom_detail' classroom.pk %}" class="btn btn-outline-myedu">
+    <i class="fas fa-arrow-left me-2"></i>Retour
+  </a>
+</div>
+
+{% if not enrollments %}
+<div class="card-myedu p-5 text-center">
+  <i class="fas fa-users" style="font-size:3rem;color:var(--muted);margin-bottom:1rem;"></i>
+  <div class="text-muted">Aucun étudiant inscrit dans cette classe.</div>
+</div>
+{% else %}
+
+<div class="card-myedu p-3 mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label">Élève</label>
+      <select name="student" class="form-select" onchange="this.form.submit()">
+        <option value="">— Choisir un élève —</option>
+        {% for enr in enrollments %}
+        <option value="{{ enr.pk }}" {% if enrollment and enr.pk == enrollment.pk %}selected{% endif %}>
+          {{ enr.student.get_full_name }} ({{ enr.matricule }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Jour</label>
+      <input type="date" name="date" class="form-control" value="{{ selected_date }}" max="{{ today }}" onchange="this.form.submit()">
+    </div>
+    <div class="col-md-3 fw-semibold pt-3">{{ day_name }} {{ selected_date|date:"d/m/Y" }}</div>
+  </form>
+</div>
+
+{% if not enrollment %}
+<div class="card-myedu p-5 text-center text-muted mb-4">
+  <i class="fas fa-user-check fa-2x mb-3" style="color:#cbd5e1;"></i>
+  <div>Choisissez d'abord un élève pour afficher ses séances du jour et saisir ses absences.</div>
+</div>
+{% elif not session_rows %}
+<div class="card-myedu p-4 text-center text-muted mb-4">Aucune séance ce jour pour cette classe.</div>
+{% else %}
+<div class="card-myedu mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="fas fa-clipboard-check me-2"></i>{{ enrollment.student.get_full_name }} — {{ day_name }} {{ selected_date|date:"d/m/Y" }}</span>
+    <span style="font-size:0.8rem;opacity:0.8;">Cochez les séances où l'élève était absent puis enregistrez</span>
+  </div>
+  {% if schedule_based %}
+  <div class="px-3 pt-2 text-muted" style="font-size:0.8rem;">
+    <i class="fas fa-calendar-check me-1"></i>Séances issues de l'emploi du temps de la classe.
+  </div>
+  {% else %}
+  <div class="px-3 pt-2 text-muted" style="font-size:0.8rem;">
+    <i class="fas fa-info-circle me-1"></i>Aucun emploi du temps saisi pour ce jour — toutes les matières sont proposées.
+  </div>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_student_day">
+    <input type="hidden" name="date" value="{{ selected_date }}">
+    <input type="hidden" name="student" value="{{ enrollment.pk }}">
+    <div class="table-responsive">
+      <table class="table table-myedu mb-0">
+        <thead>
+          <tr>
+            <th style="width:36px;"></th>
+            <th>Séance</th>
+            <th style="width:110px;">Heures</th>
+            <th>Justification</th>
+            <th style="width:100px;">Justifiée</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in session_rows %}
+          <tr class="session-row {% if row.absence %}is-absent{% endif %}">
+            <td>
+              <input type="checkbox" class="form-check-input absent-toggle" name="absent_{{ row.session.field }}"
+                     {% if row.absence %}checked{% endif %}>
+            </td>
+            <td><strong>{{ row.session.label }}</strong></td>
+            <td>
+              <input type="number" step="0.5" min="0.5" max="12" class="form-control form-control-sm hours-input"
+                     name="hours_{{ row.session.field }}"
+                     value="{{ row.absence.hours|default:row.session.hours }}">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm justif-input"
+                     name="justification_{{ row.session.field }}"
+                     placeholder="Motif (optionnel)" value="{{ row.absence.justification|default:'' }}">
+            </td>
+            <td>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="justified_{{ row.session.field }}"
+                       {% if row.absence.is_justified %}checked{% endif %}>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="p-3">
+      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-save me-2"></i>Enregistrer les absences de l'élève</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="section-title mt-4"><i class="fas fa-history me-2"></i>Absences récentes</div>
+<div class="card-myedu">
+  <div class="table-responsive">
+    <table class="table table-myedu mb-0">
+      <thead>
+        <tr>
+          <th>Étudiant</th>
+          <th>Matière</th>
+          <th>Date</th>
+          <th>Heures</th>
+          <th>Justifiée</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in recent_absences %}
+        <tr>
+          <td>{{ a.student.student.get_full_name }}</td>
+          <td>{{ a.subject.name }}</td>
+          <td>{{ a.date|date:"d/m/Y" }}</td>
+          <td>{{ a.hours }}h</td>
+          <td>
+            <form method="post" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_justified">
+              <input type="hidden" name="absence_id" value="{{ a.pk }}">
+              <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" title="Changer le statut">
+                {% if a.is_justified %}
+                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Oui</span>
+                {% else %}
+                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Non</span>
+                {% endif %}
+              </button>
+            </form>
+          </td>
+          <td class="text-end">
+            <form method="post" class="d-inline" onsubmit="return confirm('Supprimer cette absence ?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_absence">
+              <input type="hidden" name="absence_id" value="{{ a.pk }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Aucune absence enregistrée.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.absent-toggle').forEach(function (box) {
+  box.addEventListener('change', function () {
+    var row = box.closest('.session-row');
+    row.classList.toggle('is-absent', box.checked);
+  });
+});
+</script>
+{% endblock %}

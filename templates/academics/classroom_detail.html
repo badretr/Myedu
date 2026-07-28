@@ -8,7 +8,9 @@
 </ol></nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div class="page-title mb-0">{{ classroom }}</div>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'academics:grades_admin' classroom.pk %}" class="btn btn-outline-primary"><i class="fas fa-star me-2"></i>Notes</a>
+    <a href="{% url 'academics:absence_admin' classroom.pk %}" class="btn btn-outline-danger"><i class="fas fa-calendar-times me-2"></i>Absences</a>
     <a href="{% url 'academics:classroom_update' classroom.pk %}" class="btn btn-outline-myedu"><i class="fas fa-pen me-2"></i>Modifier</a>
     <a href="{% url 'academics:classroom_delete' classroom.pk %}" class="btn btn-outline-danger"><i class="fas fa-trash me-2"></i>Supprimer</a>
   </div>
@@ -25,7 +27,11 @@
           <tbody>
             {% for enr in enrollments %}
             <tr>
-              <td>{{ enr.student.get_full_name }}</td>
+              <td>
+                <a href="{% url 'academics:student_history' enr.student.pk %}" title="Parcours de l'élève" style="text-decoration:none;color:inherit;">
+                  {{ enr.student.get_full_name }} <i class="fas fa-route text-muted" style="font-size:0.75rem;"></i>
+                </a>
+              </td>
               <td>{{ enr.matricule }}</td>
               <td>{{ enr.subgroup|default:"-" }}</td>
               <td>
@@ -60,6 +66,66 @@
         <div class="mb-3"><label class="form-label">Matricule</label><input type="text" name="matricule" class="form-control" placeholder="ex: 2024MAT001"></div>
         <div class="mb-3"><label class="form-label">Sous-groupe</label><input type="text" name="subgroup" class="form-control" placeholder="ex: Sous Groupe 1"></div>
         <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-user-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1" id="matieres">
+  <div class="col-md-8">
+    <div class="card-myedu">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-book me-2"></i>Matières ({{ subjects.count }})</span>
+      </div>
+      <div class="p-3">
+        <table class="table table-myedu mb-0">
+          <thead><tr><th>Nom</th><th>Code</th><th>Coef.</th><th>Enseignant</th><th>Heures/sem</th><th>Semaines</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for subj in subjects %}
+            <tr>
+              <td>{{ subj.name }}</td>
+              <td>{{ subj.code|default:"-" }}</td>
+              <td>{{ subj.coefficient }}</td>
+              <td>{{ subj.teacher.get_full_name|default:"-" }}</td>
+              <td>{{ subj.hours_ci }}</td>
+              <td>{{ subj.weeks }}</td>
+              <td>
+                <form method="post" class="d-inline" onsubmit="return confirm('Supprimer cette matière ?');">{% csrf_token %}
+                  <input type="hidden" name="action" value="remove_subject">
+                  <input type="hidden" name="subject_id" value="{{ subj.pk }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-times"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted">Aucune matière pour cette classe.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter une matière</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_subject">
+        <div class="mb-3"><label class="form-label">Nom</label><input type="text" name="name" class="form-control" placeholder="ex: Mathématiques" required></div>
+        <div class="mb-3"><label class="form-label">Code</label><input type="text" name="code" class="form-control" placeholder="ex: MATH"></div>
+        <div class="mb-3"><label class="form-label">Coefficient</label><input type="number" step="0.5" name="coefficient" class="form-control" value="1"></div>
+        <div class="mb-3">
+          <label class="form-label">Enseignant</label>
+          <select name="teacher" class="form-select">
+            <option value="">-- Aucun --</option>
+            {% for t in teachers %}<option value="{{ t.pk }}">{{ t.get_full_name|default:t.username }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="row g-2">
+          <div class="col-6"><label class="form-label">Heures/semaine</label><input type="number" step="0.5" name="hours_ci" class="form-control" value="1.5"></div>
+          <div class="col-6"><label class="form-label">Semaines</label><input type="number" name="weeks" class="form-control" value="14"></div>
+        </div>
+        <button type="submit" class="btn btn-primary-myedu w-100 mt-3"><i class="fas fa-plus me-2"></i>Ajouter</button>
       </form>
     </div>
   </div>

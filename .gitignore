@@ -1,7 +1,5 @@
 __pycache__/
 *.py[cod]
-*.sqlite3
-.db.sqlite3
 media/
 staticfiles/
 .env
@@ -10,3 +8,9 @@ venv/
 env/
 node_modules/
 .DS_Store
+db.sqlite3
+.pgdata/
+*.log
+.vscode/
+.kilo/
+nul

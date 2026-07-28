@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}Historique messages - Myedu{% endblock %}
+{% block content %}
+<div class="history-page">
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}"><i class="fas fa-home"></i> Accueil</a></li>
+  <li class="breadcrumb-item active">Historique messages</li>
+</ol></nav>
+
+<div class="history-header d-flex justify-content-between align-items-start mb-3 flex-wrap gap-3">
+  <div class="history-header-left">
+    <div class="page-title mb-0"><i class="fas fa-clock-rotate-left me-2"></i>Historique messages</div>
+    <div class="page-subtitle mt-2">Messages envoyes par l'administration</div>
+  </div>
+  <a href="{% url 'core:message_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouveau message</a>
+</div>
+
+<div class="section-title"><i class="fas fa-users me-2"></i>Messages envoyes aux classes <small class="text-muted fw-normal" style="font-size:0.78rem;">Annonces - les parents ne peuvent pas y repondre</small></div>
+<div class="card-myedu history-panel mb-4">
+  <div class="table-responsive">
+    <table class="table table-myedu history-table mb-0">
+      <thead>
+        <tr>
+          <th>Message</th>
+          <th>Classe</th>
+          <th>Date</th>
+          <th>Piece jointe</th>
+          <th>Envoye par</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for msg in class_messages %}
+        <tr>
+          <td class="history-message-cell">
+            <a class="history-title" href="{% url 'core:message_detail' msg.pk %}">{{ msg.title }}</a>
+            <div class="history-preview">{{ msg.content|truncatechars:90 }}</div>
+          </td>
+          <td>
+            {% if msg.classroom %}
+              <span class="history-badge history-badge-class"><i class="fas fa-users me-1"></i>{{ msg.classroom }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="history-date">{{ msg.created_at|date:"d/m/Y" }}</div>
+            <div class="history-time">{{ msg.created_at|time:"H:i" }}</div>
+          </td>
+          <td>
+            {% if msg.attachment %}
+              <span class="history-attachment"><i class="fas fa-paperclip"></i> Oui</span>
+            {% else %}
+              <span class="text-muted">Non</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if msg.sender %}
+              <span class="history-sender">{% if msg.sender.role == 'admin' %}Administration{% else %}{{ msg.sender.get_full_name|default:msg.sender.phone|default:"Utilisateur" }}{% endif %}</span>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'core:message_detail' msg.pk %}" class="btn btn-sm btn-outline-myedu history-action" title="Voir le message">
+              <i class="fas fa-eye"></i>
+            </a>
+            <form method="post" action="{% url 'core:message_admin_delete' msg.pk %}" class="d-inline" onsubmit="return confirm('Supprimer ce message définitivement ?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger history-action" title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="history-empty">
+              <i class="fas fa-users"></i>
+              <div>Aucun message envoye a une classe.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-title"><i class="fas fa-comments me-2"></i>Messages avec les parents <small class="text-muted fw-normal" style="font-size:0.78rem;">Conversations - le parent peut repondre</small></div>
+<div class="card-myedu history-panel">
+  <div class="table-responsive">
+    <table class="table table-myedu history-table mb-0">
+      <thead>
+        <tr>
+          <th>Message</th>
+          <th>Parent</th>
+          <th>Reponses</th>
+          <th>Date</th>
+          <th>Piece jointe</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for msg in personal_messages %}
+        <tr>
+          <td class="history-message-cell">
+            <a class="history-title" href="{% url 'core:message_detail' msg.pk %}">{{ msg.title }}</a>
+            <div class="history-preview">{{ msg.content|truncatechars:90 }}</div>
+          </td>
+          <td>
+            <span class="history-badge history-badge-class"><i class="fas fa-user me-1"></i>{% if msg.recipient.role == 'admin' %}Administration{% else %}{{ msg.recipient.get_full_name|default:msg.recipient.children.first.father_name|default:msg.recipient.children.first.mother_name|default:msg.recipient.username }}{% endif %}</span>
+          </td>
+          <td>
+            {% if msg.reply_count %}
+              <span class="history-badge" style="background:var(--petrol-tint);color:var(--petrol-deep);"><i class="fas fa-reply me-1"></i>{{ msg.reply_count }}</span>
+            {% else %}
+              <span class="text-muted">Aucune</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="history-date">{{ msg.created_at|date:"d/m/Y" }}</div>
+            <div class="history-time">{{ msg.created_at|time:"H:i" }}</div>
+          </td>
+          <td>
+            {% if msg.attachment %}
+              <span class="history-attachment"><i class="fas fa-paperclip"></i> Oui</span>
+            {% else %}
+              <span class="text-muted">Non</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'core:message_detail' msg.pk %}" class="btn btn-sm btn-outline-myedu history-action" title="Voir le message">
+              <i class="fas fa-eye"></i>
+            </a>
+            <form method="post" action="{% url 'core:message_admin_delete' msg.pk %}" class="d-inline" onsubmit="return confirm('Supprimer ce message définitivement ?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger history-action" title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="history-empty">
+              <i class="fas fa-comments"></i>
+              <div>Aucune conversation avec un parent.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-title mt-4"><i class="fas fa-chalkboard-teacher me-2"></i>Messages avec les enseignants <small class="text-muted fw-normal" style="font-size:0.78rem;">Conversations enseignant <-> administration</small></div>
+<div class="card-myedu history-panel">
+  <div class="table-responsive">
+    <table class="table table-myedu history-table mb-0">
+      <thead>
+        <tr>
+          <th>Message</th>
+          <th>Auteur</th>
+          <th>Destinataire</th>
+          <th>Reponses</th>
+          <th>Date</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for msg in teacher_messages %}
+        <tr>
+          <td class="history-message-cell">
+            <a class="history-title" href="{% url 'core:message_detail' msg.pk %}">{{ msg.title }}</a>
+            <div class="history-preview">{{ msg.content|truncatechars:90 }}</div>
+          </td>
+          <td>
+            <span class="history-badge" style="background:{% if msg.sender.role == 'teacher' %}var(--warning-tint);color:var(--warning){% else %}var(--petrol-tint);color:var(--petrol-deep){% endif %};">
+              <i class="fas {% if msg.sender.role == 'teacher' %}fa-chalkboard-teacher{% else %}fa-user-shield{% endif %} me-1"></i>
+              {% if msg.sender.role == 'admin' %}Administration{% else %}{{ msg.sender.get_full_name|default:msg.sender.phone|default:"Enseignant" }}{% endif %}
+            </span>
+          </td>
+          <td>
+            <span class="history-badge" style="background:{% if msg.recipient.role == 'teacher' %}var(--warning-tint);color:var(--warning){% else %}var(--petrol-tint);color:var(--petrol-deep){% endif %};">
+              <i class="fas {% if msg.recipient.role == 'teacher' %}fa-chalkboard-teacher{% else %}fa-user-shield{% endif %} me-1"></i>
+              {% if msg.recipient.role == 'admin' %}Administration{% else %}{{ msg.recipient.get_full_name|default:msg.recipient.phone|default:"Enseignant" }}{% endif %}
+            </span>
+          </td>
+          <td>
+            {% if msg.reply_count %}
+              <span class="history-badge" style="background:var(--petrol-tint);color:var(--petrol-deep);"><i class="fas fa-reply me-1"></i>{{ msg.reply_count }}</span>
+            {% else %}
+              <span class="text-muted">Aucune</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="history-date">{{ msg.created_at|date:"d/m/Y" }}</div>
+            <div class="history-time">{{ msg.created_at|time:"H:i" }}</div>
+          </td>
+          <td class="text-end">
+            <a href="{% url 'core:message_detail' msg.pk %}" class="btn btn-sm btn-outline-myedu history-action" title="Voir le message">
+              <i class="fas fa-eye"></i>
+            </a>
+            <form method="post" action="{% url 'core:message_admin_delete' msg.pk %}" class="d-inline" onsubmit="return confirm('Supprimer ce message définitivement ?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger history-action" title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="history-empty">
+              <i class="fas fa-chalkboard-teacher"></i>
+              <div>Aucune conversation avec un enseignant.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+{% endblock %}

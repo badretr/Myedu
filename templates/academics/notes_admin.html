@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Suivi disciplinaire - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Suivi disciplinaire</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+  <div class="page-title">Suivi disciplinaire</div>
+</div>
+<div class="page-subtitle">Observations et punitions créées par les enseignants, organisées par classe.</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-4">
+    <div class="card-myedu p-4 d-flex flex-row align-items-center gap-3">
+      <div class="home-tile-icon icon-cyan mb-0"><i class="fas fa-eye"></i></div>
+      <div>
+        <div class="amount-value">{{ total_obs }}</div>
+        <div class="info-label">Observations</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card-myedu p-4 d-flex flex-row align-items-center gap-3">
+      <div class="home-tile-icon icon-red mb-0"><i class="fas fa-gavel"></i></div>
+      <div>
+        <div class="amount-value">{{ total_pun }}</div>
+        <div class="info-label">Punitions</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Par classe</div>
+<div class="row g-3 mb-4">
+  {% for cl in classrooms %}
+  <div class="col-md-4">
+    <a href="{% url 'academics:notes_admin_detail' cl.pk %}" class="card-myedu p-4 d-block text-decoration-none" style="color:inherit;">
+      <div style="font-weight:700;font-size:1.02rem;color:var(--accent-deep);">{{ cl.name }}</div>
+      <div style="color:var(--muted);font-size:0.83rem;">{{ cl.specialty }} | {{ cl.academic_year }}</div>
+      <div class="d-flex gap-2 mt-3">
+        <span class="badge-grade grade-na"><i class="fas fa-eye me-1"></i>{{ cl.obs_count }} obs.</span>
+        <span class="badge-grade {% if cl.pun_count %}grade-bad{% else %}grade-na{% endif %}"><i class="fas fa-gavel me-1"></i>{{ cl.pun_count }} pun.</span>
+      </div>
+    </a>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center text-muted py-5">Aucune classe créée.</div>
+  {% endfor %}
+</div>
+
+<div class="section-title">Dernières entrées</div>
+<div class="card-myedu">
+  <div class="table-responsive">
+    <table class="table table-myedu mb-0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Classe</th>
+          <th>Élève</th>
+          <th>Enseignant</th>
+          <th>Contenu</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for note in recent_notes %}
+        <tr>
+          <td class="text-nowrap">{{ note.date|date:"d/m/Y" }}</td>
+          <td>
+            {% if note.note_type == 'punition' %}
+              <span class="badge-grade grade-bad">Punition</span>
+            {% else %}
+              <span class="badge-grade grade-na">Observation</span>
+            {% endif %}
+          </td>
+          <td class="text-nowrap"><a href="{% url 'academics:notes_admin_detail' note.classroom_id %}" style="color:var(--accent-deep);font-weight:600;text-decoration:none;">{{ note.classroom.name }}</a></td>
+          <td class="text-nowrap">{% if note.student %}{{ note.student.student.get_full_name }}{% else %}<span class="text-muted">Toute la classe</span>{% endif %}</td>
+          <td class="text-nowrap">{% if note.teacher %}{{ note.teacher.get_full_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td style="max-width:340px;">{{ note.content|truncatechars:90 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Aucune observation ni punition pour le moment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

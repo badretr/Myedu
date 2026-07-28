@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Rentrée scolaire - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Rentrée scolaire</li>
+</ol></nav>
+<div class="page-title mb-1"><i class="fas fa-forward me-2"></i>Passage à l'année suivante</div>
+<div class="page-subtitle">Créez la nouvelle année, puis réinscrivez les élèves classe par classe. L'historique de chaque élève est archivé automatiquement dans son parcours.</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-myedu p-4 mb-4">
+      <div class="section-title">1. Nouvelle année scolaire</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_year">
+        <div class="mb-3"><label class="form-label">Libellé (ex : 2027-2028)</label>
+          <input type="text" name="label" class="form-control" placeholder="2027-2028" required></div>
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" name="make_current" id="makeCurrent" checked>
+          <label class="form-check-label" for="makeCurrent">Définir comme année en cours</label>
+        </div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-plus me-2"></i>Créer l'année</button>
+      </form>
+      <hr>
+      <div class="info-label mb-2">Années existantes</div>
+      {% for y in years %}
+      <span class="badge-grade {% if y.is_current %}grade-good{% else %}grade-na{% endif %} me-1">{{ y.label }}{% if y.is_current %} (en cours){% endif %}</span>
+      {% endfor %}
+      <div class="form-text mt-3">Créez ensuite les classes de la nouvelle année dans <a href="{% url 'academics:classroom_list' %}">Classes</a>.</div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card-myedu p-4">
+      <div class="section-title">2. Réinscription en masse</div>
+      <form method="get" class="mb-3">
+        <label class="form-label">Classe d'origine</label>
+        <select name="source" class="form-select" onchange="this.form.submit()">
+          <option value="">— Choisir la classe à faire passer —</option>
+          {% for c in classrooms %}
+          <option value="{{ c.pk }}" {% if source and c.pk == source.pk %}selected{% endif %}>{{ c }} {% if c.academic_year %}({{ c.academic_year }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      {% if source %}
+      {% if source_enrollments %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="move_students">
+        <input type="hidden" name="source" value="{{ source.pk }}">
+        <div class="table-responsive mb-3">
+          <table class="table table-myedu mb-0">
+            <thead><tr>
+              <th style="width:36px;"><input type="checkbox" class="form-check-input" onclick="document.querySelectorAll('.stu-check').forEach(c => c.checked = this.checked);"></th>
+              <th>Élève</th><th>Matricule</th>
+            </tr></thead>
+            <tbody>
+              {% for enr in source_enrollments %}
+              <tr>
+                <td><input type="checkbox" class="form-check-input stu-check" name="student_{{ enr.pk }}" checked></td>
+                <td>{{ enr.student.get_full_name }}</td>
+                <td>{{ enr.matricule }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">Action</label>
+            <select name="move_action" class="form-select">
+              <option value="move">Réinscrire dans la classe cible</option>
+              <option value="deactivate">Désactiver (départ de l'école)</option>
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Classe cible</label>
+            <select name="target" class="form-select">
+              {% for c in classrooms %}
+              {% if not source or c.pk != source.pk %}
+              <option value="{{ c.pk }}">{{ c }} {% if c.academic_year %}({{ c.academic_year }}){% endif %}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-primary-myedu w-100" onclick="return confirm('Confirmer le passage des élèves cochés ?');">
+              <i class="fas fa-forward me-2"></i>Valider
+            </button>
+          </div>
+        </div>
+      </form>
+      {% else %}
+      <div class="text-muted text-center py-4">Aucun élève actif dans cette classe.</div>
+      {% endif %}
+      {% else %}
+      <div class="text-muted text-center py-4"><i class="fas fa-arrow-up me-2"></i>Choisissez une classe d'origine pour commencer.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

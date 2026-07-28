@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Parcours de {{ student.get_full_name }} - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  {% if user.is_admin_user %}
+  <li class="breadcrumb-item"><a href="{% url 'accounts:user_list' %}">Comptes</a></li>
+  {% endif %}
+  <li class="breadcrumb-item active">Parcours de {{ student.get_full_name }}</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+  <div class="page-title"><i class="fas fa-route me-2"></i>Parcours de {{ student.get_full_name }}</div>
+  {% if enrollment %}
+  <span class="badge-grade grade-na"><i class="fas fa-id-card me-1"></i>Matricule {{ enrollment.matricule }}</span>
+  {% endif %}
+</div>
+<div class="page-subtitle">
+  Historique complet depuis l'entrée à l'école
+  {% if enrollment and enrollment.classroom %} — Classe actuelle : {{ enrollment.classroom }}{% endif %}
+</div>
+
+<!-- Fiche élève -->
+<div class="card-myedu p-3 mb-4">
+  <div class="row g-3">
+    <div class="col-md-3"><div class="info-label">Nom complet</div><div>{{ student.get_full_name }}</div></div>
+    <div class="col-md-3"><div class="info-label">Date de naissance</div><div>{{ student.date_of_birth|date:"d/m/Y"|default:"—" }}</div></div>
+    <div class="col-md-3"><div class="info-label">Inscrit depuis</div>
+      <div>{% if enrollment %}{{ enrollment.enrolled_at|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+    </div>
+    <div class="col-md-3"><div class="info-label">Parent</div>
+      <div>
+        {% if student.father_name %}{{ student.father_name }}
+        {% elif student.mother_name %}{{ student.mother_name }}
+        {% elif student.parent_account %}{{ student.parent_account.get_full_name }}
+        {% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if year_blocks %}
+{% for block in year_blocks %}
+<div class="section-title"><i class="fas fa-calendar me-2"></i>Année scolaire {{ block.label }}</div>
+<div class="card-myedu p-3 mb-4">
+
+  <!-- Classe(s) de l'année -->
+  <div class="mb-3">
+    {% for entry in block.classrooms %}
+    <span class="badge-grade grade-good me-1"><i class="fas fa-chalkboard me-1"></i>{{ entry.classroom_label }}</span>
+    {% empty %}
+    <span class="text-muted">Classe non enregistrée pour cette année.</span>
+    {% endfor %}
+  </div>
+
+  <!-- Résultats -->
+  {% if block.semesters %}
+  {% for sem in block.semesters %}
+  <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+    <strong><i class="fas fa-star me-2" style="color:var(--accent);"></i>{{ sem.label }}</strong>
+    {% if sem.average is not None %}
+    <span class="badge-grade {% if sem.average >= 10 %}grade-good{% else %}grade-bad{% endif %}">Moyenne : {{ sem.average }}/20</span>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-myedu mb-2">
+      <thead><tr><th>Matière</th><th>Coef</th><th>CC</th><th>DS</th><th>Examen</th><th>Moyenne</th></tr></thead>
+      <tbody>
+        {% for grade in sem.rows %}
+        <tr>
+          <td>{{ grade.subject.name }}</td>
+          <td>{{ grade.subject.coefficient }}</td>
+          <td>{{ grade.cc|default_if_none:"—" }}</td>
+          <td>{{ grade.ds|default_if_none:"—" }}</td>
+          <td>{{ grade.exam|default_if_none:"—" }}</td>
+          <td>
+            {% if grade.average is not None %}
+            <span class="badge-grade {% if grade.average >= 10 %}grade-good{% else %}grade-bad{% endif %}">{{ grade.average }}</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="text-muted mb-2"><i class="fas fa-star me-2"></i>Aucune note enregistrée pour cette année.</div>
+  {% endif %}
+
+  <!-- Absences -->
+  <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+    <strong><i class="fas fa-calendar-times me-2" style="color:var(--danger);"></i>Absences</strong>
+    {% if block.absences %}
+    <span class="badge-grade {% if block.absence_hours > 8 %}grade-bad{% else %}grade-na{% endif %}">
+      {{ block.absences|length }} absence{{ block.absences|length|pluralize }} — {{ block.absence_hours }} h
+    </span>
+    {% endif %}
+  </div>
+  {% if block.absences %}
+  <div class="table-responsive">
+    <table class="table table-myedu mb-2">
+      <thead><tr><th>Date</th><th>Matière</th><th>Heures</th><th>Justifiée</th></tr></thead>
+      <tbody>
+        {% for absence in block.absences %}
+        <tr>
+          <td>{{ absence.date|date:"d/m/Y" }}</td>
+          <td>{{ absence.subject.name }}</td>
+          <td>{{ absence.hours }} h</td>
+          <td>
+            {% if absence.is_justified %}<span class="badge bg-success">Oui</span>
+            {% else %}<span class="badge bg-danger">Non</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted mb-2">Aucune absence pour cette année.</div>
+  {% endif %}
+
+  <!-- Observations & punitions -->
+  <div class="mt-3 mb-2"><strong><i class="fas fa-clipboard-list me-2" style="color:var(--accent);"></i>Observations &amp; punitions</strong></div>
+  {% if block.notes %}
+  {% for note in block.notes %}
+  <div class="msg-card mb-2 {% if note.note_type == 'punition' %}highlighted{% endif %}"
+       {% if note.note_type == 'punition' %}style="border-left-color:var(--danger);"{% endif %}>
+    <div class="msg-card-title">
+      {% if note.note_type == 'punition' %}
+      <span class="badge-grade grade-bad me-1">Punition</span>
+      {% else %}
+      <span class="badge-grade grade-good me-1">Observation</span>
+      {% endif %}
+      {{ note.date|date:"d/m/Y" }}
+      {% if note.subject %}<span class="text-muted fw-normal"> — {{ note.subject.name }}</span>{% endif %}
+    </div>
+    <div class="msg-card-preview">{{ note.content }}</div>
+    <div class="msg-card-meta">{% if note.teacher %}Par {{ note.teacher.get_full_name }}{% endif %}</div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="text-muted">Aucune observation ni punition pour cette année.</div>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="card-myedu p-4 text-center text-muted mb-4">
+  Aucun parcours enregistré pour le moment. L'historique se remplit automatiquement dès que l'élève est inscrit dans une classe.
+</div>
+{% endif %}
+
+<!-- Paiements -->
+{% if user.is_admin_user or user.is_parent %}
+<div class="section-title"><i class="fas fa-money-check-alt me-2"></i>Paiements</div>
+{% if tranches %}
+<div class="card-myedu mb-4">
+  <div class="table-responsive">
+    <table class="table table-myedu mb-0">
+      <thead><tr><th>Tranche</th><th>Échéance</th><th>Demandé</th><th>Payé</th><th>Reste</th><th>Statut</th></tr></thead>
+      <tbody>
+        {% for tranche in tranches %}
+        <tr>
+          <td><strong>{{ tranche.label }}</strong>{% if tranche.description %} <small class="text-muted">{{ tranche.description }}</small>{% endif %}</td>
+          <td>{{ tranche.due_date|date:"d/m/Y"|default:"—" }}</td>
+          <td>{{ tranche.amount_requested }}</td>
+          <td>{{ tranche.amount_paid }}</td>
+          <td>{{ tranche.remaining }}</td>
+          <td>
+            {% if tranche.is_paid %}<span class="badge bg-success">Payée{% if tranche.paid_at %} le {{ tranche.paid_at|date:"d/m/Y" }}{% endif %}</span>
+            {% else %}<span class="badge bg-warning text-dark">En attente</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        <tr class="fw-bold">
+          <td colspan="2">Total</td>
+          <td>{{ total_requested }}</td>
+          <td colspan="3">{{ total_paid }} payé</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card-myedu p-4 text-center text-muted mb-4">Aucune tranche de paiement enregistrée.</div>
+{% endif %}
+{% endif %}
+
+<!-- Demandes de documents -->
+<div class="section-title"><i class="fas fa-file-alt me-2"></i>Demandes de documents</div>
+{% if doc_requests %}
+<div class="card-myedu mb-4">
+  <div class="table-responsive">
+    <table class="table table-myedu mb-0">
+      <thead><tr><th>Document</th><th>Date de demande</th><th>Statut</th></tr></thead>
+      <tbody>
+        {% for req in doc_requests %}
+        <tr>
+          <td>{{ req.get_doc_type_display }}</td>
+          <td>{{ req.created_at|date:"d/m/Y" }}</td>
+          <td>
+            {% if req.status == 'delivered' %}<span class="badge bg-success">{{ req.get_status_display }}</span>
+            {% elif req.status == 'rejected' %}<span class="badge bg-danger">{{ req.get_status_display }}</span>
+            {% elif req.status == 'ready' %}<span class="badge bg-info text-dark">{{ req.get_status_display }}</span>
+            {% else %}<span class="badge bg-warning text-dark">{{ req.get_status_display }}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card-myedu p-4 text-center text-muted mb-4">Aucune demande de document.</div>
+{% endif %}
+{% endblock %}

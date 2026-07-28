@@ -1,7 +1,7 @@
 ﻿{% extends "base.html" %}
 {% block title %}Supprimer compte{% endblock %}
 {% block content %}
-<div class="card-myedu p-4 mt-3" style="max-width:500px;margin:auto;">
+<div class="card-myedu p-4 mt-3 form-page-center" style="max-width:500px;">
   <div class="section-title text-danger">Confirmer la suppression</div>
   <p>Voulez-vous vraiment supprimer le compte de <strong>{{ obj.get_full_name }}</strong> ?</p>
   <form method="post" class="d-flex gap-2">

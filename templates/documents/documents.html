@@ -6,6 +6,9 @@
   <li class="breadcrumb-item active">Documents Administratifs</li>
 </ol></nav>
 <div class="page-title"><i class="fas fa-file-alt me-2"></i>Demander des Documents Administratifs</div>
+{% if user.is_parent and target_student %}
+<div class="page-subtitle">Demandes pour votre enfant : <strong>{{ target_student.get_full_name }}</strong></div>
+{% endif %}
 <div class="alert-myedu mb-4" style="background:#fef3c7;color:#92400e;">
   <i class="fas fa-exclamation-triangle fa-lg"></i>
   <div>
@@ -61,7 +64,7 @@
 </div>
 <div class="section-title">Mes Demandes</div>
 {% if my_requests %}
-<div class="card-myedu">
+<div class="card-myedu form-page-center">
   <table class="table table-myedu mb-0">
     <thead><tr><th>Document</th><th>Date</th><th>Statut</th></tr></thead>
     <tbody>

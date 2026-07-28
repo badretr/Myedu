@@ -1,4 +1,4 @@
-﻿# Myedu - Plateforme de Gestion Scolaire
+# Myedu - Plateforme de Gestion Scolaire
 
 Application web moderne developpee avec Django pour la gestion d'un etablissement scolaire.
 
@@ -56,6 +56,6 @@ python manage.py runserver
 ## Technologies
 
 - **Backend** : Django 5.x
-- **Base de donnees** : SQLite (dev) / PostgreSQL (prod)
+- **Base de donnees** : PostgreSQL
 - **Frontend** : Bootstrap 5 + Font Awesome 6
 - **Style** : CSS custom avec palette Indigo/Teal moderne

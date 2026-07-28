@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Suivi - {{ classroom }} - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'academics:teacher_classrooms' %}">Mes classes</a></li>
+  <li class="breadcrumb-item active">{{ classroom }}</li>
+</ol></nav>
+<div class="page-title mb-3">{{ classroom }} - Observations &amp; punitions</div>
+
+<div class="section-title"><i class="fas fa-chalkboard me-2"></i>Observations de classe <small class="text-muted fw-normal" style="font-size:0.78rem;">Par matière, pour toute la classe - visible par tous les parents de la classe</small></div>
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter une observation</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_observation">
+        <div class="mb-3">
+          <label class="form-label">Matière</label>
+          <select name="subject" class="form-select" required>
+            <option value="">-- Selectionner --</option>
+            {% for s in subjects %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Date</label>
+          <input type="date" name="date" class="form-control" value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contenu</label>
+          <textarea name="content" class="form-control" rows="4" required placeholder="ex: La classe a bien travaille le chapitre X"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card-myedu">
+      <div class="card-header"><i class="fas fa-chalkboard me-2"></i>Observations récentes</div>
+      <div class="p-3">
+        {% for note in observations %}
+        <div class="msg-card mb-2">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="msg-card-title">
+              <span class="badge-grade grade-good">Observation</span>
+              &nbsp;{{ note.subject.name|default:"Matière non precisee" }}
+            </div>
+            <form method="post" action="{% url 'academics:student_note_delete' note.pk %}" onsubmit="return confirm('Supprimer cette observation ?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-times"></i></button>
+            </form>
+          </div>
+          <div class="msg-card-preview">{{ note.content }}</div>
+          <div class="msg-card-meta">{{ note.date|date:"d/m/Y" }} - {{ note.teacher.get_full_name|default:"Enseignant" }}</div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-4">Aucune observation pour cette classe.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title"><i class="fas fa-user-clock me-2"></i>Punitions <small class="text-muted fw-normal" style="font-size:0.78rem;">Individuelles, par élève</small></div>
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter une punition</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_punition">
+        <div class="mb-3">
+          <label class="form-label">Etudiant</label>
+          <select name="student" class="form-select" required>
+            <option value="">-- Selectionner --</option>
+            {% for enr in enrollments %}<option value="{{ enr.pk }}">{{ enr.student.get_full_name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Date</label>
+          <input type="date" name="date" class="form-control" value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Motif</label>
+          <textarea name="content" class="form-control" rows="4" required placeholder="ex: N'a pas fait son travail"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card-myedu">
+      <div class="card-header"><i class="fas fa-user-clock me-2"></i>Punitions récentes</div>
+      <div class="p-3">
+        {% for note in punitions %}
+        <div class="msg-card highlighted mb-2">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="msg-card-title">
+              <span class="badge-grade grade-bad">Punition</span>
+              &nbsp;{{ note.student.student.get_full_name }}
+            </div>
+            <form method="post" action="{% url 'academics:student_note_delete' note.pk %}" onsubmit="return confirm('Supprimer cette punition ?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-times"></i></button>
+            </form>
+          </div>
+          <div class="msg-card-preview">{{ note.content }}</div>
+          <div class="msg-card-meta">{{ note.date|date:"d/m/Y" }} - {{ note.teacher.get_full_name|default:"Enseignant" }}</div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-4">Aucune punition pour cette classe.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Observations et punitions - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Observations et punitions</li>
+</ol></nav>
+<div class="page-title mb-3"><i class="fas fa-clipboard-list me-2"></i>Observations et punitions</div>
+
+{% if not enrollment %}
+<div class="text-center text-muted py-5"><i class="fas fa-clipboard-list fa-3x mb-3 d-block"></i>Aucune information disponible.</div>
+{% else %}
+<div class="section-title"><i class="fas fa-chalkboard me-2"></i>Observations de la classe</div>
+<div class="card-myedu mb-4">
+  <div class="p-3">
+    {% for note in observations %}
+    <div class="msg-card mb-2">
+      <div class="msg-card-title">
+        <span class="badge-grade grade-good">Observation</span>
+        &nbsp;{{ note.subject.name|default:"Matière non precisee" }}
+      </div>
+      <div class="msg-card-preview">{{ note.content }}</div>
+      <div class="msg-card-meta">{{ note.date|date:"d/m/Y" }} - {{ note.teacher.get_full_name|default:"Enseignant" }}</div>
+    </div>
+    {% empty %}
+    <div class="text-muted text-center py-4">Aucune observation pour la classe.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="section-title"><i class="fas fa-user-clock me-2"></i>Punitions</div>
+<div class="card-myedu">
+  <div class="p-3">
+    {% for note in punitions %}
+    <div class="msg-card highlighted mb-2">
+      <div class="msg-card-title"><span class="badge-grade grade-bad">Punition</span></div>
+      <div class="msg-card-preview">{{ note.content }}</div>
+      <div class="msg-card-meta">{{ note.date|date:"d/m/Y" }} - {{ note.teacher.get_full_name|default:"Enseignant" }}</div>
+    </div>
+    {% empty %}
+    <div class="text-muted text-center py-4">Aucune punition.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

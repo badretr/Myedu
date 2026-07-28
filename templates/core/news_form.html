@@ -5,11 +5,15 @@
   <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
   <li class="breadcrumb-item active">Nouvelle actualite</li>
 </ol></nav>
-<div class="card-myedu p-4" style="max-width:700px;">
+<div class="card-myedu p-4 form-page-center">
   <div class="section-title">Publier une actualite</div>
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="mb-3"><label class="form-label">Titre</label><input type="text" name="title" class="form-control" required></div>
+    <div class="mb-3">
+      <label class="form-label">Photo</label>
+      <input type="file" name="image" class="form-control" accept="image/*">
+    </div>
     <div class="mb-3"><label class="form-label">Contenu</label><textarea name="content" class="form-control" rows="6" required></textarea></div>
     <div class="form-check mb-3">
       <input type="checkbox" name="is_public" id="pubCheck" class="form-check-input" checked>
@@ -22,3 +26,6 @@
   </form>
 </div>
 {% endblock %}
+
+
+

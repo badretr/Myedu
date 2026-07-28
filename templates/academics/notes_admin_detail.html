@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Suivi {{ classroom.name }} - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'academics:notes_admin' %}">Suivi disciplinaire</a></li>
+  <li class="breadcrumb-item active">{{ classroom.name }}</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+  <div class="page-title">{{ classroom.name }}</div>
+  <div class="d-flex gap-2">
+    <span class="badge-grade grade-na"><i class="fas fa-eye me-1"></i>{{ observations|length }} observations</span>
+    <span class="badge-grade {% if pun_count %}grade-bad{% else %}grade-na{% endif %}"><i class="fas fa-gavel me-1"></i>{{ pun_count }} punitions</span>
+  </div>
+</div>
+<div class="page-subtitle">{{ classroom.specialty }} | {{ classroom.academic_year }}</div>
+
+<div class="section-title">Punitions par élève</div>
+{% if students_grouped %}
+<div class="row g-3 mb-4">
+  {% for enrollment, notes in students_grouped %}
+  <div class="col-lg-6">
+    <div class="card-myedu">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-user-graduate me-2" style="color:var(--accent);"></i>{{ enrollment.student.get_full_name }}</span>
+        <span class="badge-grade grade-bad">{{ notes|length }}</span>
+      </div>
+      <div class="p-3">
+        {% for note in notes %}
+        <div class="msg-card highlighted mb-2" style="border-left-color:var(--danger);">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <div class="msg-card-title">{{ note.date|date:"d/m/Y" }}
+                {% if note.subject %}<span class="text-muted fw-normal"> — {{ note.subject.name }}</span>{% endif %}
+              </div>
+              <div class="msg-card-preview">{{ note.content }}</div>
+              <div class="msg-card-meta">{% if note.teacher %}Par {{ note.teacher.get_full_name }}{% endif %}</div>
+            </div>
+            <form method="post" action="{% url 'academics:student_note_delete' note.pk %}" onsubmit="return confirm('Supprimer cette punition ?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger history-action" title="Supprimer"><i class="fas fa-trash"></i></button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card-myedu p-4 text-center text-muted mb-4">Aucune punition enregistrée pour cette classe.</div>
+{% endif %}
+
+<div class="section-title">Observations de classe</div>
+{% if observations %}
+<div class="mb-4">
+  {% for note in observations %}
+  <div class="msg-card">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div>
+        <div class="msg-card-title">{{ note.date|date:"d/m/Y" }}
+          {% if note.subject %}<span class="text-muted fw-normal"> — {{ note.subject.name }}</span>{% endif %}
+        </div>
+        <div class="msg-card-preview">{{ note.content }}</div>
+        <div class="msg-card-meta">{% if note.teacher %}Par {{ note.teacher.get_full_name }}{% endif %}</div>
+      </div>
+      <form method="post" action="{% url 'academics:student_note_delete' note.pk %}" onsubmit="return confirm('Supprimer cette observation ?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger history-action" title="Supprimer"><i class="fas fa-trash"></i></button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card-myedu p-4 text-center text-muted mb-4">Aucune observation enregistrée pour cette classe.</div>
+{% endif %}
+{% endblock %}

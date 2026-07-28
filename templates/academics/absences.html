@@ -1,83 +1,243 @@
-﻿{% extends "base.html" %}
-{% block title %}Mes Absences - Myedu{% endblock %}
+{% extends "base.html" %}
+{% block title %}Mes absences - Myedu{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
-  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
-  <li class="breadcrumb-item active">Mes absences</li>
-</ol></nav>
-<div class="page-title"><i class="fas fa-calendar-times me-2"></i>Mes Absences</div>
-<div class="page-subtitle">Statistiques detaillees par periode</div>
-<ul class="nav nav-tabs mb-4" id="absTabs">
-  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#abs-s1"><i class="fas fa-calendar me-1"></i>SEMESTRE 1</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#abs-s2"><i class="fas fa-calendar me-1"></i>SEMESTRE 2</a></li>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="page-title">
+    <i class="fas fa-calendar-times me-2" style="color:var(--danger);"></i>
+    Mes absences
+  </div>
+  {% if enrollment and enrollment.classroom %}
+  <div>
+    <span class="badge rounded-pill" style="background:var(--ink);color:#fff;font-size:0.85rem;padding:0.5rem 1rem;">
+      {{ enrollment.classroom }}
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+{% if admin_mode %}
+<div class="page-subtitle mb-3">Choisissez une classe pour gérer ses absences</div>
+<div class="row g-3">
+  {% for cl in classrooms %}
+  <div class="col-md-4">
+    <a href="{% url 'academics:absence_admin' cl.pk %}" class="card-myedu p-3 d-block text-decoration-none" style="color:inherit;">
+      <div style="font-weight:700;color:var(--ink);"><i class="fas fa-chalkboard me-2" style="color:var(--danger);"></i>{{ cl.name }}</div>
+      <div class="text-muted" style="font-size:0.82rem;">{{ cl.specialty }} {{ cl.academic_year }}</div>
+    </a>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center text-muted py-5">Aucune classe créée.</div>
+  {% endfor %}
+</div>
+{% elif not enrollment or not enrollment.is_active %}
+<div class="card-myedu p-5 text-center">
+  <i class="fas fa-user-slash" style="font-size:3rem;color:var(--muted);margin-bottom:1rem;"></i>
+  <div class="text-muted">Vous n'êtes pas inscrit dans une classe active.</div>
+</div>
+{% else %}
+
+<ul class="nav nav-tabs mb-4" id="absenceTabs" role="tablist" style="border-bottom-color:var(--line);">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="s1-tab" data-bs-toggle="tab" data-bs-target="#s1" type="button" role="tab">
+      {% if semester_s1 %}{{ semester_s1.get_label_display }}{% else %}Semestre 1{% endif %}
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="s2-tab" data-bs-toggle="tab" data-bs-target="#s2" type="button" role="tab">
+      {% if semester_s2 %}{{ semester_s2.get_label_display }}{% else %}Semestre 2{% endif %}
+    </button>
+  </li>
 </ul>
+
 <div class="tab-content">
-  <div class="tab-pane fade show active" id="abs-s1">
-    {% if semester_s1 %}
-    <div class="alert-myedu mb-3" style="background:#e0f2fe;color:#0c4a6e;">
-      <i class="fas fa-calendar-alt fa-lg"></i>
-      <div><strong>SEMESTRE 1 entre {{ semester_s1.start_date|date:"d-m-Y" }} et {{ semester_s1.end_date|date:"d-m-Y" }}</strong></div>
-    </div>
-    {% endif %}
-    {% for name, entry in absences_s1.items %}
-    <div class="card-myedu mb-3">
-      <div class="p-4">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <div>
-            {% if entry.danger %}
-              <span style="color:#dc2626;font-weight:700;font-size:1rem;"><i class="fas fa-exclamation-square me-1"></i>{{ entry.subject.name|upper }}</span>
-            {% else %}
-              <span style="color:#059669;font-weight:700;font-size:1rem;"><i class="fas fa-check-square me-1"></i>{{ entry.subject.name|upper }}</span>
-            {% endif %}
-          </div>
+  <!-- Semestre 1 -->
+  <div class="tab-pane fade show active" id="s1" role="tabpanel">
+    <div class="card-myedu">
+      <div class="card-header">
+        <i class="fas fa-book me-2"></i>Absences par matière
+        {% if semester_s1 %}
+        <span class="ms-2" style="font-size:0.8rem;opacity:0.8;">({{ semester_s1.start_date|date:"d/m/Y" }} - {{ semester_s1.end_date|date:"d/m/Y" }})</span>
+        {% endif %}
+      </div>
+      <div class="p-3">
+        {% if absences_s1 %}
+        <table class="table table-myedu mb-0">
+          <thead>
+            <tr>
+              <th>Matière</th>
+              <th class="text-center">Total heures</th>
+              <th class="text-center">Taux d'absence</th>
+              <th class="text-center">Détail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for subj_name, entry in absences_s1.items %}
+            <tr>
+              <td class="fw-semibold">{{ subj_name }}</td>
+              <td class="text-center">{{ entry.total_hours }}h / {{ entry.subject.total_hours }}h</td>
+              <td class="text-center">
+                <span class="badge-grade {% if entry.danger %}grade-bad{% elif entry.rate > 0 %}grade-ok{% else %}grade-good{% endif %}">
+                  {{ entry.rate }}%
+                </span>
+                <div class="absence-bar">
+                  <div class="absence-bar-fill {% if entry.danger %}danger{% elif entry.rate > 5 %}warning{% endif %}" style="width:{% widthratio entry.rate 100 100 %}%;"></div>
+                </div>
+              </td>
+              <td class="text-center">
+                {% if entry.absences %}
+                <button class="btn btn-sm btn-outline-myedu" type="button" data-bs-toggle="collapse" data-bs-target="#s1-detail-{{ forloop.counter }}" aria-expanded="false">
+                  <i class="fas fa-list me-1"></i>{{ entry.absences.count }} absence{% if entry.absences.count > 1 %}s{% endif %}
+                </button>
+                {% else %}
+                <span class="text-success"><i class="fas fa-check-circle me-1"></i>Aucune</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr class="collapse" id="s1-detail-{{ forloop.counter }}">
+              <td colspan="4" class="p-0">
+                <div class="p-3 bg-light">
+                  {% if entry.absences %}
+                  <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                      <tr>
+                        <th style="font-size:0.75rem;">Date</th>
+                        <th style="font-size:0.75rem;">Heures</th>
+                        <th style="font-size:0.75rem;">Justifiée</th>
+                        <th style="font-size:0.75rem;">Justification</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for a in entry.absences %}
+                      <tr>
+                        <td>{{ a.date|date:"d/m/Y" }}</td>
+                        <td>{{ a.hours }}h</td>
+                        <td>
+                          {% if a.is_justified %}
+                          <span class="badge bg-success"><i class="fas fa-check me-1"></i>Oui</span>
+                          {% else %}
+                          <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Non</span>
+                          {% endif %}
+                        </td>
+                        <td>{{ a.justification|default:"—" }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  {% else %}
+                  <div class="text-center text-muted py-2">
+                    <i class="fas fa-check-circle me-2" style="color:var(--success);"></i>Aucune absence enregistrée pour cette matière.
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="fas fa-check-circle" style="font-size:3rem;color:var(--success);margin-bottom:1rem;"></i>
+          <div>Aucune absence enregistrée.</div>
         </div>
-        <div class="row g-2 mb-2" style="font-size:0.8rem;color:#64748b;">
-          <div class="col-3 text-center"><div class="fw-bold">NBR H CI</div><div>{{ entry.subject.hours_ci }}</div></div>
-          <div class="col-3 text-center"><div class="fw-bold">NBR H TP</div><div>{{ entry.subject.hours_tp }}</div></div>
-          <div class="col-3 text-center"><div class="fw-bold">NBR SEMAINES</div><div>{{ entry.subject.weeks }}</div></div>
-          <div class="col-3 text-center"><div class="fw-bold">CHARGE HORAIRE</div><div>{{ entry.subject.total_hours }}</div></div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center">
-          <span style="font-size:1.4rem;font-weight:800;color:{% if entry.danger %}#dc2626{% else %}#059669{% endif %};">{{ entry.total_hours }}H</span>
-          <span style="font-size:1.2rem;font-weight:700;color:#64748b;">{{ entry.rate }}%</span>
-        </div>
-        <div class="absence-bar mt-2">
-          <div class="absence-bar-fill {% if entry.rate >= 15 %}danger{% elif entry.rate >= 10 %}warning{% endif %}" style="width:{% if entry.rate > 100 %}100{% else %}{{ entry.rate }}{% endif %}%;"></div>
-        </div>
-        {% if entry.danger %}
-        <div class="mt-2" style="font-size:0.82rem;color:#f59e0b;"><i class="fas fa-exclamation-triangle me-1"></i>Vous ne devez pas etre absent dans les semaines a venir pour eviter l'exclusion dans cette matiere</div>
         {% endif %}
       </div>
     </div>
-    {% empty %}
-    <div class="text-center text-muted py-5">Aucune absence enregistree.</div>
-    {% endfor %}
   </div>
-  <div class="tab-pane fade" id="abs-s2">
-    {% if semester_s2 %}
-    <div class="alert-myedu mb-3" style="background:#e0f2fe;color:#0c4a6e;">
-      <i class="fas fa-calendar-alt fa-lg"></i>
-      <div><strong>SEMESTRE 2 entre {{ semester_s2.start_date|date:"d-m-Y" }} et {{ semester_s2.end_date|date:"d-m-Y" }}</strong></div>
-    </div>
-    {% endif %}
-    {% for name, entry in absences_s2.items %}
-    <div class="card-myedu mb-3">
-      <div class="p-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <span style="color:{% if entry.danger %}#dc2626{% else %}#059669{% endif %};font-weight:700;font-size:1rem;">{{ entry.subject.name|upper }}</span>
+
+  <!-- Semestre 2 -->
+  <div class="tab-pane fade" id="s2" role="tabpanel">
+    <div class="card-myedu">
+      <div class="card-header">
+        <i class="fas fa-book me-2"></i>Absences par matière
+        {% if semester_s2 %}
+        <span class="ms-2" style="font-size:0.8rem;opacity:0.8;">({{ semester_s2.start_date|date:"d/m/Y" }} - {{ semester_s2.end_date|date:"d/m/Y" }})</span>
+        {% endif %}
+      </div>
+      <div class="p-3">
+        {% if absences_s2 %}
+        <table class="table table-myedu mb-0">
+          <thead>
+            <tr>
+              <th>Matière</th>
+              <th class="text-center">Total heures</th>
+              <th class="text-center">Taux d'absence</th>
+              <th class="text-center">Détail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for subj_name, entry in absences_s2.items %}
+            <tr>
+              <td class="fw-semibold">{{ subj_name }}</td>
+              <td class="text-center">{{ entry.total_hours }}h / {{ entry.subject.total_hours }}h</td>
+              <td class="text-center">
+                <span class="badge-grade {% if entry.danger %}grade-bad{% elif entry.rate > 0 %}grade-ok{% else %}grade-good{% endif %}">
+                  {{ entry.rate }}%
+                </span>
+                <div class="absence-bar">
+                  <div class="absence-bar-fill {% if entry.danger %}danger{% elif entry.rate > 5 %}warning{% endif %}" style="width:{% widthratio entry.rate 100 100 %}%;"></div>
+                </div>
+              </td>
+              <td class="text-center">
+                {% if entry.absences %}
+                <button class="btn btn-sm btn-outline-myedu" type="button" data-bs-toggle="collapse" data-bs-target="#s2-detail-{{ forloop.counter }}" aria-expanded="false">
+                  <i class="fas fa-list me-1"></i>{{ entry.absences.count }} absence{% if entry.absences.count > 1 %}s{% endif %}
+                </button>
+                {% else %}
+                <span class="text-success"><i class="fas fa-check-circle me-1"></i>Aucune</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr class="collapse" id="s2-detail-{{ forloop.counter }}">
+              <td colspan="4" class="p-0">
+                <div class="p-3 bg-light">
+                  {% if entry.absences %}
+                  <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                      <tr>
+                        <th style="font-size:0.75rem;">Date</th>
+                        <th style="font-size:0.75rem;">Heures</th>
+                        <th style="font-size:0.75rem;">Justifiée</th>
+                        <th style="font-size:0.75rem;">Justification</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for a in entry.absences %}
+                      <tr>
+                        <td>{{ a.date|date:"d/m/Y" }}</td>
+                        <td>{{ a.hours }}h</td>
+                        <td>
+                          {% if a.is_justified %}
+                          <span class="badge bg-success"><i class="fas fa-check me-1"></i>Oui</span>
+                          {% else %}
+                          <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Non</span>
+                          {% endif %}
+                        </td>
+                        <td>{{ a.justification|default:"—" }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  {% else %}
+                  <div class="text-center text-muted py-2">
+                    <i class="fas fa-check-circle me-2" style="color:var(--success);"></i>Aucune absence enregistrée pour cette matière.
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="fas fa-check-circle" style="font-size:3rem;color:var(--success);margin-bottom:1rem;"></i>
+          <div>Aucune absence enregistrée.</div>
         </div>
-        <div class="d-flex justify-content-between">
-          <span style="font-size:1.4rem;font-weight:800;">{{ entry.total_hours }}H</span>
-          <span style="font-size:1.2rem;font-weight:700;color:#64748b;">{{ entry.rate }}%</span>
-        </div>
-        <div class="absence-bar mt-2">
-          <div class="absence-bar-fill {% if entry.rate >= 15 %}danger{% elif entry.rate >= 10 %}warning{% endif %}" style="width:{% if entry.rate > 100 %}100{% else %}{{ entry.rate }}{% endif %}%;"></div>
-        </div>
+        {% endif %}
       </div>
     </div>
-    {% empty %}
-    <div class="text-center text-muted py-5">Aucune absence enregistree.</div>
-    {% endfor %}
   </div>
 </div>
+
+{% endif %}
 {% endblock %}

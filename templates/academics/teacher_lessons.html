@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Cahier de textes - {{ classroom }} - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  {% if user.is_admin_user %}
+  <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  {% else %}
+  <li class="breadcrumb-item"><a href="{% url 'academics:teacher_classrooms' %}">Mes classes</a></li>
+  {% endif %}
+  <li class="breadcrumb-item active">Cahier de textes</li>
+</ol></nav>
+<div class="page-title mb-3"><i class="fas fa-book-open me-2"></i>Cahier de textes — {{ classroom }}</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Nouvelle entrée</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="mb-3"><label class="form-label">Matière</label>
+          <select name="subject" class="form-select" required>
+            {% for s in my_subjects %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+          </select></div>
+        <div class="mb-3"><label class="form-label">Date de la séance</label>
+          <input type="date" name="date" class="form-control" value="{{ today }}" required></div>
+        <div class="mb-3"><label class="form-label">Travail fait en classe</label>
+          <textarea name="content" class="form-control" rows="3" required placeholder="ex : Lecture du texte page 24, exercices 1 à 3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Devoirs à faire (optionnel)</label>
+          <textarea name="homework" class="form-control" rows="2" placeholder="ex : Apprendre la leçon, exercice 5 page 25"></textarea></div>
+        <div class="mb-3"><label class="form-label">Pour le (optionnel)</label>
+          <input type="date" name="homework_due" class="form-control"></div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="section-title">Dernières entrées</div>
+    {% for e in entries %}
+    <div class="msg-card mb-2 d-flex justify-content-between align-items-start gap-2">
+      <div>
+        <div class="msg-card-title">
+          <span class="badge-grade grade-na me-1">{{ e.date|date:"d/m/Y" }}</span>
+          {{ e.subject.name }}
+          {% if e.teacher %}<span class="text-muted fw-normal" style="font-size:0.8rem;"> — {{ e.teacher.get_full_name }}</span>{% endif %}
+        </div>
+        <div class="msg-card-preview">{{ e.content }}</div>
+        {% if e.homework %}
+        <div class="mt-1"><span class="badge bg-warning text-dark me-1"><i class="fas fa-pen me-1"></i>Devoirs</span>
+          {{ e.homework }}{% if e.homework_due %} <strong>(pour le {{ e.homework_due|date:"d/m/Y" }})</strong>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% if user.is_admin_user or e.teacher_id == user.pk %}
+      <form method="post" onsubmit="return confirm('Supprimer cette entrée ?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" name="entry_id" value="{{ e.pk }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="card-myedu p-4 text-center text-muted">Aucune entrée pour le moment.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

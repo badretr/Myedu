@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -7,54 +7,202 @@
   {% load static %}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="{% static 'css/myedu.css' %}" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="{% static 'css/myedu.css' %}?v=20260728-bg4" rel="stylesheet">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body{% if user.is_authenticated %} class="app-shell"{% endif %}>
 
 {% if user.is_authenticated %}
-<nav class="navbar-myedu d-flex align-items-center justify-content-between">
-  <div class="d-flex align-items-center gap-3">
-    <a class="navbar-brand-myedu" href="{% url 'core:home' %}">
-      <span>M</span>Myedu
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<aside class="sidebar" id="sidebar">
+  <a class="sidebar-brand" href="{% url 'core:home' %}">
+    <span class="sidebar-brand-badge">M</span>Myedu
+  </a>
+
+  <nav class="sidebar-nav">
+    {% url 'core:home' as url_home %}
+    <a class="sidebar-link {% if request.path == url_home %}active{% endif %}" href="{{ url_home }}">
+      <i class="fas fa-home"></i> Accueil
     </a>
-    <div class="d-none d-lg-flex align-items-center gap-1">
-      <a class="nav-link-myedu" href="{% url 'core:home' %}"><i class="fas fa-home"></i> Accueil</a>
-      <div class="dropdown">
-        <a class="nav-link-myedu dropdown-toggle" href="#" data-bs-toggle="dropdown">
-          <i class="fas fa-graduation-cap"></i> Scolarité
-        </a>
-        <ul class="dropdown-menu dropdown-myedu">
-          <li><a class="dropdown-item" href="{% url 'academics:my_grades' %}"><i class="fas fa-star me-2 text-warning"></i>Mes résultats</a></li>
-          <li><a class="dropdown-item" href="{% url 'academics:my_absences' %}"><i class="fas fa-calendar-times me-2 text-danger"></i>Mes absences</a></li>
-          <li><a class="dropdown-item" href="{% url 'academics:schedule' %}"><i class="fas fa-calendar-alt me-2 text-primary"></i>Emploi du temps</a></li>
-          <li><a class="dropdown-item" href="{% url 'academics:my_group' %}"><i class="fas fa-users me-2 text-success"></i>Mon groupe</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{% url 'documents:documents' %}"><i class="fas fa-file-alt me-2 text-info"></i>Documents</a></li>
-        </ul>
-      </div>
-      <a class="nav-link-myedu" href="{% url 'core:inbox' %}"><i class="fas fa-envelope"></i> Messages</a>
-      <a class="nav-link-myedu" href="{% url 'finance:my_balance' %}"><i class="fas fa-wallet"></i> Mon Solde</a>
-      {% if user.is_admin_user %}
-      <div class="dropdown">
-        <a class="nav-link-myedu dropdown-toggle" href="#" data-bs-toggle="dropdown">
-          <i class="fas fa-cog"></i> Admin
-        </a>
-        <ul class="dropdown-menu dropdown-myedu">
-          <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="fas fa-users me-2"></i>Gérer comptes</a></li>
-          <li><a class="dropdown-item" href="{% url 'accounts:user_create' %}"><i class="fas fa-user-plus me-2"></i>Créer compte</a></li>
-          <li><a class="dropdown-item" href="{% url 'academics:classroom_list' %}"><i class="fas fa-chalkboard me-2"></i>Gérer classes</a></li>
-          <li><a class="dropdown-item" href="{% url 'core:message_create' %}"><i class="fas fa-paper-plane me-2"></i>Envoyer message</a></li>
-          <li><a class="dropdown-item" href="{% url 'core:news_create' %}"><i class="fas fa-newspaper me-2"></i>Publier actualité</a></li>
-          <li><a class="dropdown-item" href="{% url 'documents:admin_requests' %}"><i class="fas fa-folder-open me-2"></i>Demandes docs</a></li>
-          <li><a class="dropdown-item" href="{% url 'academics:schedule_upload' %}"><i class="fas fa-calendar-upload me-2"></i>Emploi du temps</a></li>
-        </ul>
-      </div>
+
+    {% if not user.is_teacher %}
+    <div class="sidebar-section">Scolarité</div>
+    {% url 'academics:my_grades' as url_grades %}
+    <a class="sidebar-link {% if request.path == url_grades %}active{% endif %}" href="{{ url_grades }}">
+      <i class="fas fa-star"></i> Résultats
+    </a>
+    {% url 'academics:my_absences' as url_absences %}
+    <a class="sidebar-link {% if request.path == url_absences %}active{% endif %}" href="{{ url_absences }}">
+      <i class="fas fa-calendar-times"></i> Absences
+    </a>
+    {% if user.is_parent %}
+    {% url 'academics:my_notes' as url_notes %}
+    <a class="sidebar-link {% if request.path == url_notes %}active{% endif %}" href="{{ url_notes }}">
+      <i class="fas fa-clipboard-list"></i> Suivi disciplinaire
+    </a>
+    {% endif %}
+    {% if user.linked_enrollment %}
+    {% url 'academics:student_history' user.linked_enrollment.student.pk as url_history %}
+    <a class="sidebar-link {% if request.path == url_history %}active{% endif %}" href="{{ url_history }}">
+      <i class="fas fa-route"></i> Mon parcours
+    </a>
+    {% endif %}
+    {% url 'academics:schedule' as url_schedule %}
+    <a class="sidebar-link {% if request.path == url_schedule %}active{% endif %}" href="{{ url_schedule }}">
+      <i class="fas fa-calendar-alt"></i> Emploi du temps
+    </a>
+    {% url 'academics:my_lessons' as url_lessons %}
+    <a class="sidebar-link {% if request.path == url_lessons %}active{% endif %}" href="{{ url_lessons }}">
+      <i class="fas fa-book-open"></i> Cahier de textes
+    </a>
+    {% url 'documents:documents' as url_docs %}
+    <a class="sidebar-link {% if request.path == url_docs %}active{% endif %}" href="{{ url_docs }}">
+      <i class="fas fa-file-alt"></i> Documents
+    </a>
+    {% endif %}
+
+    {% if user.is_teacher %}
+    <div class="sidebar-section">Enseignement</div>
+    {% url 'academics:teacher_classrooms' as url_classrooms %}
+    <a class="sidebar-link {% if request.path == url_classrooms %}active{% endif %}" href="{{ url_classrooms }}">
+      <i class="fas fa-chalkboard-teacher"></i> Mes classes
+    </a>
+    {% endif %}
+
+    <div class="sidebar-section">Communication</div>
+    {% if user.is_admin_user %}
+    {% url 'core:message_history' as url_msg %}
+    <a class="sidebar-link {% if request.path == url_msg %}active{% endif %}" href="{{ url_msg }}">
+      <i class="fas fa-envelope"></i> Messages
+    </a>
+    {% else %}
+    {% url 'core:inbox' as url_msg %}
+    <a class="sidebar-link {% if request.path == url_msg %}active{% endif %}" href="{{ url_msg }}">
+      <i class="fas fa-envelope"></i> Messages
+    </a>
+    {% endif %}
+    {% if user.is_parent %}
+    {% url 'core:parent_message_to_teacher' as url_contact %}
+    <a class="sidebar-link {% if request.path == url_contact %}active{% endif %}" href="{{ url_contact }}">
+      <i class="fas fa-chalkboard-teacher"></i> Contacter enseignant
+    </a>
+    {% endif %}
+    {% if user.is_parent or user.is_student %}
+    {% url 'core:appointment_request_create' as url_rdv %}
+    <a class="sidebar-link {% if request.path == url_rdv %}active{% endif %}" href="{{ url_rdv }}">
+      <i class="fas fa-calendar-check"></i> Rendez-vous
+    </a>
+    {% endif %}
+
+    {% if not user.is_teacher and not user.is_admin_user %}
+    <div class="sidebar-section">Finance</div>
+    {% url 'finance:my_balance' as url_balance %}
+    <a class="sidebar-link {% if request.path == url_balance %}active{% endif %}" href="{{ url_balance }}">
+      <i class="fas fa-wallet"></i> Solde
+    </a>
+    {% endif %}
+
+    {% if user.is_admin_user %}
+    {% url 'finance:my_balance' as url_balance %}
+    <a class="sidebar-link {% if request.path == url_balance %}active{% endif %}" href="{{ url_balance }}">
+      <i class="fas fa-wallet"></i> Solde
+    </a>
+    <div class="sidebar-section">Administration</div>
+    {% url 'accounts:user_list' as url_users %}
+    <a class="sidebar-link {% if request.path == url_users %}active{% endif %}" href="{{ url_users }}">
+      <i class="fas fa-users"></i> Gérer comptes
+    </a>
+    {% url 'accounts:user_create' as url_user_create %}
+    <a class="sidebar-link {% if request.path == url_user_create %}active{% endif %}" href="{{ url_user_create }}">
+      <i class="fas fa-user-plus"></i> Créer compte élève
+    </a>
+    {% url 'accounts:teacher_create' as url_teacher_create %}
+    <a class="sidebar-link {% if request.path == url_teacher_create %}active{% endif %}" href="{{ url_teacher_create }}">
+      <i class="fas fa-chalkboard-teacher"></i> Créer enseignant
+    </a>
+    {% url 'academics:classroom_list' as url_classroom_list %}
+    <a class="sidebar-link {% if request.path == url_classroom_list %}active{% endif %}" href="{{ url_classroom_list }}">
+      <i class="fas fa-chalkboard"></i> Gérer classes
+    </a>
+    {% url 'academics:notes_admin' as url_notes_admin %}
+    <a class="sidebar-link {% if request.path == url_notes_admin %}active{% endif %}" href="{{ url_notes_admin }}">
+      <i class="fas fa-gavel"></i> Suivi disciplinaire
+    </a>
+    {% url 'core:message_create' as url_msg_create %}
+    <a class="sidebar-link {% if request.path == url_msg_create %}active{% endif %}" href="{{ url_msg_create }}">
+      <i class="fas fa-paper-plane"></i> Envoyer message
+    </a>
+    {% url 'core:news_create' as url_news %}
+    <a class="sidebar-link {% if request.path == url_news %}active{% endif %}" href="{{ url_news }}">
+      <i class="fas fa-newspaper"></i> Publier actualité
+    </a>
+    {% url 'core:appointment_admin' as url_rdv_admin %}
+    <a class="sidebar-link {% if request.path == url_rdv_admin %}active{% endif %}" href="{{ url_rdv_admin }}">
+      <i class="fas fa-calendar-day"></i> Rendez-vous
+    </a>
+    {% url 'documents:admin_requests' as url_doc_requests %}
+    <a class="sidebar-link {% if request.path == url_doc_requests %}active{% endif %}" href="{{ url_doc_requests }}">
+      <i class="fas fa-folder-open"></i> Demandes docs
+    </a>
+    {% url 'academics:schedule_manage' as url_sched_manage %}
+    <a class="sidebar-link {% if request.path == url_sched_manage %}active{% endif %}" href="{{ url_sched_manage }}">
+      <i class="fas fa-calendar-alt"></i> Emploi du temps
+    </a>
+    {% url 'core:events' as url_events %}
+    <a class="sidebar-link {% if request.path == url_events %}active{% endif %}" href="{{ url_events }}">
+      <i class="fas fa-calendar-day"></i> Calendrier scolaire
+    </a>
+    {% url 'finance:services_admin' as url_services %}
+    <a class="sidebar-link {% if request.path == url_services %}active{% endif %}" href="{{ url_services }}">
+      <i class="fas fa-bus"></i> Cantine &amp; transport
+    </a>
+    {% url 'academics:year_transition' as url_rentree %}
+    <a class="sidebar-link {% if request.path == url_rentree %}active{% endif %}" href="{{ url_rentree }}">
+      <i class="fas fa-forward"></i> Rentrée scolaire
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <a class="sidebar-user" href="{% url 'accounts:profile' %}">
+      {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" class="navbar-avatar" alt="">
+      {% else %}
+        <span class="navbar-avatar-placeholder">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
       {% endif %}
+      <span>
+        <span class="sidebar-user-name d-block">{% if user.role == 'parent' and user.linked_enrollment %}{{ user.linked_enrollment.student.get_full_name }}{% else %}{{ user.get_full_name }}{% endif %}</span>
+        <span class="sidebar-user-role">{{ user.get_role_display }}</span>
+      </span>
+    </a>
+  </div>
+</aside>
+
+<header class="topbar">
+  <div class="d-flex align-items-center gap-3">
+    <button class="topbar-toggle" id="sidebarToggle" type="button" aria-label="Menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="topbar-greeting">
+      {% if user.role == 'parent' and user.linked_enrollment %}{{ user.linked_enrollment.student.get_full_name }}{% else %}{{ user.get_full_name }}{% endif %}
+      <small>{{ user.get_role_display }}</small>
     </div>
   </div>
-  <div class="d-flex align-items-center gap-3">
+  <div class="topbar-actions">
+    <div class="dropdown dropdown-myedu">
+      <button id="notifBtn" class="topbar-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" type="button">
+        <i class="fas fa-bell"></i>
+        <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if notification_count|default:0 == 0 %}d-none{% endif %}">{{ notification_count|default:0 }}</span>
+      </button>
+      <div class="dropdown-menu dropdown-menu-end dropdown-myedu p-0" style="min-width:320px;">
+        <div class="px-3 py-2 border-bottom fw-semibold">Notifications</div>
+        <div id="notifList" style="max-height:320px;overflow:auto;">
+          <div class="px-3 py-3 text-muted">Chargement...</div>
+        </div>
+      </div>
+    </div>
     <div class="dropdown dropdown-myedu">
       <button class="btn p-0 border-0 bg-transparent d-flex align-items-center gap-2" data-bs-toggle="dropdown">
         {% if user.profile_picture %}
@@ -62,25 +210,24 @@
         {% else %}
           <span class="navbar-avatar-placeholder">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
         {% endif %}
-        <span class="text-white d-none d-md-inline" style="font-size:0.85rem;font-weight:600;">{% if user.role == 'parent' and user.linked_enrollment %}{{ user.linked_enrollment.student.get_full_name }}{% else %}{{ user.get_full_name }}{% endif %}</span>
-        <i class="fas fa-chevron-down text-white" style="font-size:0.7rem;"></i>
+        <i class="fas fa-chevron-down" style="font-size:0.65rem;color:var(--muted);"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end dropdown-myedu">
         <li class="px-3 py-2 border-bottom">
           <div style="font-weight:700;">{% if user.role == 'parent' and user.linked_enrollment %}{{ user.linked_enrollment.student.get_full_name }}{% else %}{{ user.get_full_name }}{% endif %}</div>
-          <div style="font-size:0.8rem;color:#64748b;">{{ user.get_role_display }}</div>
+          <div style="font-size:0.8rem;color:var(--muted);">{{ user.get_role_display }}</div>
         </li>
         <li><a class="dropdown-item mt-1" href="{% url 'accounts:profile' %}"><i class="fas fa-user me-2"></i>Mon profil</a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
           <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
-            <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</button>
+            <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>Deconnexion</button>
           </form>
         </li>
       </ul>
     </div>
   </div>
-</nav>
+</header>
 {% endif %}
 
 <div class="{% if user.is_authenticated %}page-wrapper{% endif %}">
@@ -97,6 +244,82 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% if user.is_authenticated %}
+<script>
+(function () {
+  const toggle = document.getElementById('sidebarToggle');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (toggle) {
+    toggle.addEventListener('click', () => document.body.classList.toggle('sidebar-open'));
+  }
+  if (backdrop) {
+    backdrop.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+  }
+})();
+
+(function () {
+  const pollUrl = "{% url 'core:notifications_poll' %}";
+  const markReadUrl = "{% url 'core:notifications_mark_all_read' %}";
+  const badge = document.getElementById('notifBadge');
+  const list = document.getElementById('notifList');
+  const btn = document.getElementById('notifBtn');
+
+  if (!badge || !list || !btn) {
+    return;
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  }
+
+  function render(items) {
+    if (!items.length) {
+      list.innerHTML = '<div class="px-3 py-3 text-muted">Aucune notification.</div>';
+      return;
+    }
+    list.innerHTML = items.map((item) => {
+      const url = item.target_url || '#';
+      const content = item.content ? `<div class="text-muted small">${item.content}</div>` : '';
+      return `<a href="${url}" class="dropdown-item py-3 border-bottom text-wrap">` +
+        `<div class="fw-semibold">${item.title}</div>` +
+        `${content}` +
+        `</a>`;
+    }).join('');
+  }
+
+  async function refresh() {
+    try {
+      const response = await fetch(pollUrl, { credentials: 'same-origin' });
+      if (!response.ok) return;
+      const data = await response.json();
+      badge.textContent = data.count;
+      badge.classList.toggle('d-none', data.count === 0);
+      render(data.notifications || []);
+    } catch (error) {
+    }
+  }
+
+  async function markRead() {
+    try {
+      await fetch(markReadUrl, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        credentials: 'same-origin',
+      });
+      await refresh();
+    } catch (error) {
+    }
+  }
+
+  btn.addEventListener('shown.bs.dropdown', markRead);
+  refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+{% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

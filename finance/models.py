@@ -14,6 +14,11 @@ class PaymentTranche(models.Model):
     due_date = models.DateField(null=True, blank=True)
     paid_at = models.DateField(null=True, blank=True)
     order = models.IntegerField(default=1)
+    is_bank_validated = models.BooleanField(
+        default=False,
+        verbose_name='Chèque/traite validé par la banque',
+    )
+    reminder_sent = models.BooleanField(default=False, verbose_name='Rappel envoyé au parent')
 
     class Meta:
         ordering = ["order"]
@@ -29,3 +34,25 @@ class PaymentTranche(models.Model):
     @property
     def is_paid(self):
         return self.remaining <= 0
+
+
+class ExtraService(models.Model):
+    """Services annexes : cantine, transport scolaire…"""
+    SERVICE_CHOICES = [
+        ('cantine', 'Cantine'),
+        ('transport', 'Transport scolaire'),
+    ]
+    enrollment = models.ForeignKey(StudentEnrollment, on_delete=models.CASCADE, related_name='extra_services')
+    service_type = models.CharField(max_length=20, choices=SERVICE_CHOICES, verbose_name='Service')
+    monthly_fee = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name='Tarif mensuel')
+    is_active = models.BooleanField(default=True, verbose_name='Actif')
+    notes = models.CharField(max_length=200, blank=True, verbose_name='Remarques (arrêt de bus, régime…)')
+    started_at = models.DateField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('enrollment', 'service_type')
+        verbose_name = 'Service annexe'
+        verbose_name_plural = 'Services annexes'
+
+    def __str__(self):
+        return f"{self.enrollment.student.get_full_name()} - {self.get_service_type_display()}"

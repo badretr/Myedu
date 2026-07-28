@@ -11,14 +11,62 @@
     <div class="page-title"><i class="fas fa-calendar-alt me-2"></i>Emploi du Temps</div>
     {% if schedule %}<div class="page-subtitle">Version du {{ schedule.version_date|date:"d-m-Y"|default:"N/A" }}</div>{% endif %}
   </div>
-  {% if user.is_admin_user %}
-  <a href="{% url 'academics:schedule_upload' %}" class="btn btn-primary-myedu">
-    <i class="fas fa-upload me-2"></i>Publier un emploi du temps
-  </a>
-  {% endif %}
+  <div class="d-flex gap-2 flex-wrap">
+    {% if grid %}
+    <a href="{% url 'academics:schedule_export' %}" class="btn btn-outline-myedu">
+      <i class="fas fa-image me-2"></i>Télécharger en image
+    </a>
+    {% elif schedule %}
+    <a href="{% url 'academics:schedule_download' %}" class="btn btn-outline-myedu">
+      <i class="fas fa-download me-2"></i>Télécharger
+    </a>
+    {% endif %}
+    {% if user.is_admin_user %}
+    <a href="{% url 'academics:schedule_manage' %}" class="btn btn-primary-myedu">
+      <i class="fas fa-edit me-2"></i>Saisir l'emploi du temps
+    </a>
+    {% endif %}
+  </div>
 </div>
 
-{% if schedule %}
+{% if grid %}
+  <div class="card-myedu p-3">
+    <div class="table-responsive">
+      <table class="table table-myedu table-bordered mb-0" style="min-width:900px;">
+        <thead>
+          <tr>
+            <th style="width:90px;">Horaire</th>
+            {% for day, label in days %}<th class="text-center">{{ label }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in grid %}
+          {% if row.is_break %}
+          <tr style="background:#f1f5f9;">
+            <td class="fw-semibold text-nowrap">12h - 14h</td>
+            <td colspan="{{ days|length }}" class="text-center fw-semibold text-muted">
+              <i class="fas fa-utensils me-2"></i>Pause déjeuner
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td class="fw-semibold text-nowrap">{{ row.hour }}h - {{ row.hour|add:1 }}h</td>
+            {% for entry in row.cells %}
+            <td class="text-center align-middle">
+              {% if entry %}
+              <div class="fw-semibold">{{ entry.subject.name }}</div>
+              {% if entry.teacher %}<div class="text-muted" style="font-size:0.75rem;">{{ entry.teacher.get_full_name }}</div>{% endif %}
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% elif schedule %}
   <div class="card-myedu p-3 text-center">
     <img src="{{ schedule.image.url }}" alt="Emploi du temps" class="img-fluid rounded-3" style="max-width:100%;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
     <div class="mt-3 text-muted" style="font-size:0.85rem;">
@@ -31,8 +79,8 @@
     <div style="font-size:1.1rem;font-weight:600;color:#64748b;">Aucun emploi du temps disponible</div>
     <div class="text-muted mt-1" style="font-size:0.9rem;">L'administration n'a pas encore publié l'emploi du temps.</div>
     {% if user.is_admin_user %}
-    <a href="{% url 'academics:schedule_upload' %}" class="btn btn-primary-myedu mt-3">
-      <i class="fas fa-upload me-2"></i>Publier maintenant
+    <a href="{% url 'academics:schedule_manage' %}" class="btn btn-primary-myedu mt-3">
+      <i class="fas fa-edit me-2"></i>Saisir maintenant
     </a>
     {% endif %}
   </div>

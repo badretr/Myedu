@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}Nouveau message - Myedu{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
@@ -6,7 +6,7 @@
   <li class="breadcrumb-item"><a href="{% url 'core:inbox' %}">Messages</a></li>
   <li class="breadcrumb-item active">Nouveau message</li>
 </ol></nav>
-<div class="card-myedu p-4" style="max-width:700px;">
+<div class="card-myedu p-4 form-page-center">
   <div class="section-title">Envoyer un message</div>
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -15,11 +15,40 @@
       <input type="text" name="title" class="form-control" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">Destinataire (classe)</label>
+      <label class="form-label">Destinataire</label>
+      <select name="target" id="target-select" class="form-select">
+        <option value="classroom">Une classe</option>
+        <option value="student">Un élève spécifique (son parent)</option>
+        <option value="teacher">Un enseignant</option>
+      </select>
+    </div>
+    <div class="mb-3" id="classroom-block" style="display:none;">
+      <label class="form-label">Classe</label>
       <select name="classroom" class="form-select">
-        <option value="">-- Tous les etudiants --</option>
+        <option value="">-- Sélectionner une classe --</option>
         {% for cl in classrooms %}<option value="{{ cl.pk }}">{{ cl }}</option>{% endfor %}
       </select>
+    </div>
+    <div class="mb-3" id="student-block" style="display:none;">
+      <label class="form-label">Classe de l'élève</label>
+      <select id="student-class-filter" class="form-select mb-2">
+        <option value="">-- Choisir d'abord la classe --</option>
+        {% for cl in classrooms %}<option value="{{ cl.pk }}">{{ cl }}</option>{% endfor %}
+      </select>
+      <label class="form-label">Élève</label>
+      <select name="student" id="student-select" class="form-select" disabled>
+        <option value="">-- Sélectionner un élève --</option>
+        {% for s in students %}<option value="{{ s.pk }}" data-classroom="{{ s.enrollment.classroom_id|default:'' }}" hidden>{{ s.get_full_name|default:s.username }}{% if s.enrollment %} ({{ s.enrollment.matricule }}){% endif %}</option>{% endfor %}
+      </select>
+      <div class="form-text">Le message sera envoyé uniquement au parent lié à cet élève.</div>
+    </div>
+    <div class="mb-3" id="teacher-block" style="display:none;">
+      <label class="form-label">Enseignant</label>
+      <select name="teacher" class="form-select">
+        <option value="">-- Sélectionner un enseignant --</option>
+        {% for t in teachers %}<option value="{{ t.pk }}">{{ t.get_full_name|default:t.username }}</option>{% endfor %}
+      </select>
+      <div class="form-text">Le message sera envoyé directement à cet enseignant.</div>
     </div>
     <div class="mb-3">
       <label class="form-label">Contenu</label>
@@ -35,4 +64,34 @@
     </div>
   </form>
 </div>
+<script>
+(function () {
+  const targetSelect = document.getElementById('target-select');
+  const classroomBlock = document.getElementById('classroom-block');
+  const studentBlock = document.getElementById('student-block');
+  const teacherBlock = document.getElementById('teacher-block');
+
+  function sync() {
+    classroomBlock.style.display = targetSelect.value === 'classroom' ? '' : 'none';
+    studentBlock.style.display = targetSelect.value === 'student' ? '' : 'none';
+    teacherBlock.style.display = targetSelect.value === 'teacher' ? '' : 'none';
+  }
+
+  targetSelect.addEventListener('change', sync);
+  sync();
+
+  // Filtre des élèves par classe : la liste ne montre que la classe choisie
+  const classFilter = document.getElementById('student-class-filter');
+  const studentSelect = document.getElementById('student-select');
+  classFilter.addEventListener('change', function () {
+    const selectedClass = this.value;
+    studentSelect.value = '';
+    studentSelect.disabled = !selectedClass;
+    Array.from(studentSelect.options).forEach(function (option) {
+      if (!option.value) return; // placeholder toujours visible
+      option.hidden = !selectedClass || option.getAttribute('data-classroom') !== selectedClass;
+    });
+  });
+})();
+</script>
 {% endblock %}

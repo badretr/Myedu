@@ -1,12 +1,17 @@
 ﻿{% extends "base.html" %}
+{% load l10n %}
 {% block title %}Saisie des notes - Myedu{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  {% if user.is_admin_user %}
   <li class="breadcrumb-item"><a href="{% url 'academics:classroom_list' %}">Classes</a></li>
+  {% else %}
+  <li class="breadcrumb-item"><a href="{% url 'academics:teacher_classrooms' %}">Mes classes</a></li>
+  {% endif %}
   <li class="breadcrumb-item active">Notes - {{ classroom }}</li>
 </ol></nav>
 <div class="page-title">Saisie des notes - {{ classroom }}</div>
-<div class="card-myedu p-4 mb-4">
+<div class="card-myedu p-4 mb-4 form-page-center">
   <form method="get" class="row g-3 align-items-end">
     <div class="col-md-4">
       <label class="form-label">Matiere</label>
@@ -26,19 +31,20 @@
   </form>
 </div>
 {% if grades %}
-<div class="card-myedu">
+<div class="card-myedu form-page-center">
   <form method="post">
     {% csrf_token %}
+    <input type="hidden" name="subject" value="{{ selected_subject }}">
+    <input type="hidden" name="semester" value="{{ selected_semester }}">
     <table class="table table-myedu mb-0">
-      <thead><tr><th>Etudiant</th><th>CC</th><th>DS</th><th>Examen</th><th>Controle</th></tr></thead>
+      <thead><tr><th>Etudiant</th><th>CC</th><th>DS</th><th>Examen</th></tr></thead>
       <tbody>
         {% for g in grades %}
         <tr>
           <td><strong>{{ g.student.student.get_full_name }}</strong></td>
-          <td><input type="number" name="cc_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.cc|default:'' }}"></td>
-          <td><input type="number" name="ds_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.ds|default:'' }}"></td>
-          <td><input type="number" name="exam_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.exam|default:'' }}"></td>
-          <td><input type="number" name="controle_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.controle|default:'' }}"></td>
+          <td><input type="number" name="cc_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.cc|default:''|unlocalize }}"></td>
+          <td><input type="number" name="ds_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.ds|default:''|unlocalize }}"></td>
+          <td><input type="number" name="exam_{{ g.student.pk }}" class="form-control form-control-sm" style="width:80px;" step="0.01" min="0" max="20" value="{{ g.exam|default:''|unlocalize }}"></td>
         </tr>
         {% endfor %}
       </tbody>

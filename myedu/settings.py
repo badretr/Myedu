@@ -3,6 +3,22 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def load_env_file(path):
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
+load_env_file(BASE_DIR / '.env')
+
 SECRET_KEY = 'django-insecure-myedu-change-this-in-production-2024'
 
 DEBUG = True
@@ -26,7 +42,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'myedu.middleware.CanonicalHostMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -56,32 +71,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'myedu.wsgi.application'
 
-# PostgreSQL configuration: supply connection details via environment variables.
-# Example (PowerShell):
-# $env:POSTGRES_DB = 'myedu_db'; $env:POSTGRES_USER = 'myedu_user'; $env:POSTGRES_PASSWORD = 'secret';
-_postgres_env_ready = all(
-    os.environ.get(name)
-    for name in ('POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD')
-)
+def postgres_config():
+    return {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'myedu_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'myedu_user'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', '0000'),
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
+        'CONN_MAX_AGE': 60,
+    }
 
-if os.environ.get('USE_SQLITE_FALLBACK') == '1' or not _postgres_env_ready:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB', 'myedu_db'),
-            'USER': os.environ.get('POSTGRES_USER', 'myedu_user'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
-            'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-        }
-    }
+
+DATABASES = {
+    'default': postgres_config(),
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

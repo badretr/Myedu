@@ -1,72 +1,267 @@
 ﻿{% extends "base.html" %}
 {% block title %}Accueil - Myedu{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-start mb-1">
-  <div>
-    <div class="page-title">Bonjour {% if user.role == 'parent' and linked_enrollment %}{{ linked_enrollment.student.get_full_name }}{% else %}{{ user.first_name }}{% endif %} &#128075;</div>
-    <div class="page-subtitle">
-      {% if linked_enrollment %}{{ linked_enrollment.classroom }}{% else %}{{ user.get_role_display }}{% endif %}
+<div class="home-shell">
+  <div class="d-flex justify-content-between align-items-start mb-1">
+    <div>
+      <div class="page-title">Bonjour {% if user.role == 'parent' and linked_enrollment %}{{ linked_enrollment.student.get_full_name }}{% else %}{{ user.first_name }}{% endif %} &#128075;</div>
+      <div class="page-subtitle">
+        {% if linked_enrollment %}{{ linked_enrollment.classroom }}{% else %}{{ user.get_role_display }}{% endif %}
+      </div>
     </div>
   </div>
-</div>
 
-<div class="home-grid mb-4">
-  {% if linked_enrollment %}
-  <a href="{% url 'accounts:profile' %}" class="home-tile">
-    <div class="home-tile-icon icon-blue"><i class="fas fa-id-card"></i></div>
-    <span class="home-tile-label">Fiche Élève</span>
-  </a>
+  {% if dashboard %}
+  <!-- ===== KPI : suivi opérationnel du jour ===== -->
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <div class="info-label"><i class="fas fa-calendar-times me-1 text-danger"></i>Absents aujourd'hui</div>
+        <div class="fs-3 fw-bold {% if dashboard.absences_today %}text-danger{% endif %}">{{ dashboard.absences_today }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <div class="info-label"><i class="fas fa-money-bill-wave me-1 text-warning"></i>Paiements en retard</div>
+        <div class="fs-3 fw-bold {% if dashboard.overdue_count %}text-warning{% endif %}">{{ dashboard.overdue_count }}</div>
+        {% if dashboard.overdue_total %}<div class="text-muted" style="font-size:0.78rem;">{{ dashboard.overdue_total|floatformat:0 }} DT à recouvrer</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <a href="{% url 'documents:admin_requests' %}" class="text-decoration-none" style="color:inherit;">
+          <div class="info-label"><i class="fas fa-folder-open me-1 text-primary"></i>Demandes docs</div>
+          <div class="fs-3 fw-bold">{{ dashboard.pending_docs }}</div>
+        </a>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <a href="{% url 'core:appointment_admin' %}" class="text-decoration-none" style="color:inherit;">
+          <div class="info-label"><i class="fas fa-calendar-day me-1" style="color:var(--plum);"></i>RDV en attente</div>
+          <div class="fs-3 fw-bold">{{ dashboard.pending_appointments }}</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KPI : finances & communauté ===== -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <div class="info-label"><i class="fas fa-percentage me-1 text-success"></i>Taux de recouvrement</div>
+        <div class="fs-3 fw-bold">{{ dashboard.collection_rate }}%</div>
+        <div class="absence-bar mt-1">
+          <div class="absence-bar-fill" style="width:{{ dashboard.collection_rate }}%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <div class="info-label"><i class="fas fa-coins me-1 text-success"></i>Recette du mois</div>
+        <div class="fs-3 fw-bold text-success">{{ dashboard.revenue_this_month|floatformat:0 }} DT</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <a href="{% url 'core:suggestions' %}" class="text-decoration-none" style="color:inherit;">
+          <div class="info-label"><i class="fas fa-lightbulb me-1 text-warning"></i>Nouvelles suggestions</div>
+          <div class="fs-3 fw-bold {% if dashboard.new_suggestions %}text-warning{% endif %}">{{ dashboard.new_suggestions }}</div>
+        </a>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card-myedu p-3 text-center">
+        <div class="info-label"><i class="fas fa-users me-1 text-primary"></i>Élèves / Profs / Parents</div>
+        <div class="fs-4 fw-bold">{{ dashboard.students_count }} / {{ dashboard.teachers_count }} / {{ dashboard.parents_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Documents par statut ===== -->
+  {% if dashboard.total_docs %}
+  <div class="card-myedu p-3 mb-4">
+    <div class="section-title mb-2"><i class="fas fa-file-alt me-2"></i>Demandes de documents par statut</div>
+    <div class="d-flex rounded-pill overflow-hidden mb-2" style="height:14px;background:var(--line-soft);">
+      {% for d in dashboard.doc_breakdown %}
+      {% if d.count %}
+      <div class="bg-{{ d.style }}" style="width:{{ d.pct }}%;" title="{{ d.label }} : {{ d.count }}"></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <div class="d-flex flex-wrap gap-3">
+      {% for d in dashboard.doc_breakdown %}
+      <div class="d-flex align-items-center gap-1" style="font-size:0.8rem;">
+        <span class="rounded-circle bg-{{ d.style }}" style="width:9px;height:9px;display:inline-block;"></span>
+        {{ d.label }} <strong>{{ d.count }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
   {% endif %}
-  <a href="{% url 'core:inbox' %}" class="home-tile">
-    <div class="home-tile-icon icon-purple"><i class="fas fa-envelope"></i></div>
-    <span class="home-tile-label">Messages{% if unread_count %} ({{ unread_count }}){% endif %}</span>
-  </a>
-  <a href="{% url 'core:suggestions' %}" class="home-tile">
-    <div class="home-tile-icon icon-yellow"><i class="fas fa-lightbulb"></i></div>
-    <span class="home-tile-label">Suggestions</span>
-  </a>
-  <a href="{% url 'academics:my_absences' %}" class="home-tile">
-    <div class="home-tile-icon icon-red"><i class="fas fa-calendar-times"></i></div>
-    <span class="home-tile-label">Absences</span>
-  </a>
-  <a href="{% url 'academics:my_grades' %}" class="home-tile">
-    <div class="home-tile-icon icon-green"><i class="fas fa-chart-bar"></i></div>
-    <span class="home-tile-label">Resultats</span>
-  </a>
-  <a href="{% url 'academics:schedule' %}" class="home-tile">
-    <div class="home-tile-icon icon-cyan"><i class="fas fa-calendar-alt"></i></div>
-    <span class="home-tile-label">Emploi du temps</span>
-  </a>
-  <a href="{% url 'academics:my_group' %}" class="home-tile">
-    <div class="home-tile-icon icon-indigo"><i class="fas fa-users"></i></div>
-    <span class="home-tile-label">Mon Groupe</span>
-  </a>
-  <a href="{% url 'finance:my_balance' %}" class="home-tile">
-    <div class="home-tile-icon icon-orange"><i class="fas fa-wallet"></i></div>
-    <span class="home-tile-label">Mon Solde</span>
-  </a>
-  <a href="{% url 'documents:documents' %}" class="home-tile">
-    <div class="home-tile-icon icon-teal"><i class="fas fa-file-alt"></i></div>
-    <span class="home-tile-label">Documents</span>
-  </a>
-</div>
 
-<div class="section-title"><i class="fas fa-newspaper me-2"></i>Actualites <small class="text-muted fw-normal" style="font-size:0.8rem;">Notes d'informations</small></div>
-{% if user.is_admin_user %}
-<a href="{% url 'core:news_create' %}" class="btn btn-primary-myedu btn-sm mb-3"><i class="fas fa-plus me-1"></i>Publier une actualite</a>
-{% endif %}
-{% for item in news %}
-<div class="news-item">
-  <div class="news-title"><i class="fas fa-newspaper me-2 text-primary"></i>{{ item.title }}</div>
-  <div class="news-date"><i class="fas fa-calendar me-1"></i>{{ item.created_at|date:"d-m-Y" }} &nbsp; <i class="fas fa-clock me-1"></i>{{ item.created_at|time:"H:i:s" }}</div>
-  <p style="font-size:0.9rem;color:#374151;margin:0;">{{ item.content|truncatechars:200 }}</p>
+  {% if dashboard.absences_today_list %}
+  <div class="card-myedu mb-4">
+    <div class="card-header"><i class="fas fa-calendar-times me-2"></i>Absences du jour</div>
+    <div class="table-responsive">
+      <table class="table table-myedu mb-0">
+        <thead><tr><th>Élève</th><th>Classe</th><th>Matière</th><th>Heures</th></tr></thead>
+        <tbody>
+          {% for a in dashboard.absences_today_list %}
+          <tr>
+            <td>{{ a.student.student.get_full_name }}</td>
+            <td>{{ a.student.classroom }}</td>
+            <td>{{ a.subject.name }}</td>
+            <td>{{ a.hours }}h</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if upcoming_events %}
+  <div class="card-myedu mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-calendar-day me-2"></i>Événements à venir</span>
+      {% if user.is_admin_user %}<a href="{% url 'core:events' %}" class="btn btn-sm btn-outline-light">Gérer</a>{% endif %}
+    </div>
+    <div class="p-3">
+      {% for ev in upcoming_events %}
+      <div class="d-flex align-items-center gap-3 {% if not forloop.last %}mb-2 pb-2 border-bottom{% endif %}">
+        <span class="badge-grade grade-na text-nowrap">{{ ev.start_date|date:"d/m" }}{% if ev.end_date %} → {{ ev.end_date|date:"d/m" }}{% endif %}</span>
+        <div>
+          <div class="fw-semibold">{{ ev.title }}</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ ev.get_event_type_display }}{% if ev.description %} — {{ ev.description|truncatechars:80 }}{% endif %}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="home-grid mb-4">
+    {% if linked_enrollment %}
+    <a href="{% url 'accounts:profile' %}" class="home-tile">
+      <div class="home-tile-icon icon-blue"><i class="fas fa-id-card"></i></div>
+      <span class="home-tile-label">Fiche Élève</span>
+    </a>
+    {% endif %}
+    {% if not user.is_teacher %}
+    <a href="{% url 'core:inbox' %}" class="home-tile">
+      <div class="home-tile-icon icon-purple"><i class="fas fa-envelope"></i></div>
+      <span class="home-tile-label">Messages{% if unread_count %} ({{ unread_count }}){% endif %}</span>
+    </a>
+    {% endif %}
+    {% if not user.is_teacher %}
+    <a href="{% url 'core:suggestions' %}" class="home-tile">
+      <div class="home-tile-icon icon-yellow"><i class="fas fa-lightbulb"></i></div>
+      <span class="home-tile-label">Suggestions</span>
+    </a>
+    {% endif %}
+    {% if not user.is_teacher %}
+    <a href="{% url 'academics:my_absences' %}" class="home-tile">
+      <div class="home-tile-icon icon-red"><i class="fas fa-calendar-times"></i></div>
+      <span class="home-tile-label">Absences</span>
+    </a>
+    <a href="{% url 'academics:my_grades' %}" class="home-tile">
+      <div class="home-tile-icon icon-green"><i class="fas fa-chart-bar"></i></div>
+      <span class="home-tile-label">Resultats</span>
+    </a>
+    <a href="{% url 'academics:schedule' %}" class="home-tile">
+      <div class="home-tile-icon icon-cyan"><i class="fas fa-calendar-alt"></i></div>
+      <span class="home-tile-label">Emploi du temps</span>
+    </a>
+    <a href="{% url 'academics:my_group' %}" class="home-tile">
+      <div class="home-tile-icon icon-indigo"><i class="fas fa-users"></i></div>
+      <span class="home-tile-label">Mon Groupe</span>
+    </a>
+    <a href="{% url 'finance:my_balance' %}" class="home-tile">
+      <div class="home-tile-icon icon-orange"><i class="fas fa-wallet"></i></div>
+      <span class="home-tile-label">Mon Solde</span>
+    </a>
+    {% endif %}
+    {% if not user.is_teacher %}
+    <a href="{% url 'documents:documents' %}" class="home-tile">
+      <div class="home-tile-icon icon-teal"><i class="fas fa-file-alt"></i></div>
+      <span class="home-tile-label">Documents</span>
+    </a>
+    {% endif %}
+    {% if user.is_parent or user.is_student %}
+    <a href="{% url 'core:appointment_request_create' %}" class="home-tile">
+      <div class="home-tile-icon icon-pink"><i class="fas fa-calendar-check"></i></div>
+      <span class="home-tile-label">Rendez-vous</span>
+    </a>
+    {% endif %}
+    {% if user.is_admin_user %}
+    <a href="{% url 'core:appointment_admin' %}" class="home-tile">
+      <div class="home-tile-icon icon-pink"><i class="fas fa-calendar-day"></i></div>
+      <span class="home-tile-label">RDV Admin</span>
+    </a>
+    {% endif %}
+  </div>
+
+  {% if user.is_parent or user.is_student %}
+  <div class="section-title"><i class="fas fa-calendar-check me-2"></i>Mes rendez-vous</div>
+  <div class="home-surface p-3 rounded-3 mb-4">
+    {% for appt in appointments %}
+      <div class="d-flex justify-content-between align-items-start py-2 {% if not forloop.last %}border-bottom{% endif %}">
+        <div>
+          <div class="fw-semibold">{{ appt.requested_datetime|date:"d/m/Y H:i" }}</div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ appt.reason|default:"Sans motif" }}</div>
+        </div>
+        <span class="badge {% if appt.status == 'pending' %}bg-warning text-dark{% elif appt.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %}">
+          {% if appt.status == 'pending' %}En attente{% elif appt.status == 'accepted' %}Accepté{% else %}Refusé{% endif %}
+        </span>
+      </div>
+    {% empty %}
+      <div class="text-muted">Aucune demande de rendez-vous pour le moment.</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if user.is_admin_user %}
-    <form method="post" action="{% url 'core:news_delete' item.pk %}" class="d-inline mt-2">
-      {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-trash"></i></button>
-    </form>
+  <div class="section-title"><i class="fas fa-calendar-day me-2"></i>Rendez-vous récents</div>
+  <div class="home-surface p-3 rounded-3 mb-4">
+    {% for appt in admin_appointments|slice:":5" %}
+      <div class="d-flex justify-content-between align-items-start py-2 {% if not forloop.last %}border-bottom{% endif %}">
+        <div>
+          <div class="fw-semibold">{{ appt.parent.get_full_name }}</div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ appt.requested_datetime|date:"d/m/Y H:i" }} - {{ appt.reason|default:"Sans motif" }}</div>
+        </div>
+        <span class="badge {% if appt.status == 'pending' %}bg-warning text-dark{% elif appt.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %}">
+          {% if appt.status == 'pending' %}En attente{% elif appt.status == 'accepted' %}Accepté{% else %}Refusé{% endif %}
+        </span>
+      </div>
+    {% empty %}
+      <div class="text-muted">Aucune demande de rendez-vous.</div>
+    {% endfor %}
+  </div>
   {% endif %}
+
+  <div class="section-title"><i class="fas fa-newspaper me-2"></i>Actualites <small class="text-muted fw-normal" style="font-size:0.8rem;">Notes d'informations</small></div>
+  {% if user.is_admin_user %}
+  <a href="{% url 'core:news_create' %}" class="btn btn-primary-myedu btn-sm mb-3"><i class="fas fa-plus me-1"></i>Publier une actualite</a>
+  {% endif %}
+  {% for item in news %}
+  <div class="news-item home-surface">
+    <div class="news-title"><i class="fas fa-newspaper me-2 text-primary"></i>{{ item.title }}</div>
+    <div class="news-date"><i class="fas fa-calendar me-1"></i>{{ item.created_at|date:"d-m-Y" }} &nbsp; <i class="fas fa-clock me-1"></i>{{ item.created_at|time:"H:i:s" }}</div>
+    {% if item.image %}
+      <img src="{{ item.image.url }}" alt="{{ item.title }}" class="img-fluid rounded-3 mb-3" style="max-height:320px;object-fit:cover;width:100%;">
+    {% endif %}
+    <p style="font-size:0.9rem;color:#374151;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;">{{ item.content }}</p>
+    {% if user.is_admin_user %}
+      <form method="post" action="{% url 'core:news_delete' item.pk %}" class="d-inline mt-2">
+        {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-trash"></i></button>
+      </form>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="text-muted text-center py-4"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>Aucune actualite pour le moment.</div>
+  {% endfor %}
 </div>
-{% empty %}
-<div class="text-muted text-center py-4"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>Aucune actualite pour le moment.</div>
-{% endfor %}
 {% endblock %}
+
