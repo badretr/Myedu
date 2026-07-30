@@ -268,6 +268,27 @@ body.sidebar-open .sidebar-backdrop { display: block; opacity: 1; }
   color: var(--muted);
 }
 
+.topbar-search {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+  margin: 0 1.5rem;
+}
+.topbar-search i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.topbar-search .form-control {
+  padding-left: 2.4rem;
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  border-color: var(--line);
+}
+
 .topbar-actions { display: flex; align-items: center; gap: 0.6rem; }
 
 .topbar-icon-btn {
@@ -475,6 +496,25 @@ body.sidebar-open .sidebar-backdrop { display: block; opacity: 1; }
 .msg-card-title { font-weight: 700; font-size: 0.93rem; margin-bottom: 0.3rem; }
 .msg-card-preview { color: var(--muted); font-size: 0.84rem; }
 .msg-card-meta { color: var(--muted); opacity: 0.85; font-size: 0.76rem; margin-top: 0.5rem; }
+.msg-card-from { color: var(--ink-soft); font-weight: 600; font-size: 0.78rem; margin-top: 0.25rem; }
+.msg-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--petrol); margin-right: 6px; vertical-align: middle; }
+
+/* Inbox toolbar (search + read filter) */
+.inbox-search { position: relative; min-width: 220px; }
+.inbox-search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.85rem; }
+.inbox-search .form-control { padding-left: 2.4rem; border-radius: var(--radius-md); }
+.inbox-filter-tabs { display: inline-flex; background: var(--surface-alt, #f1f2f6); border-radius: var(--radius-md); padding: 3px; gap: 2px; }
+.inbox-filter-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: calc(var(--radius-md) - 3px);
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.inbox-filter-btn.active { background: var(--surface); color: var(--accent-deep); box-shadow: var(--card-shadow); }
 
 /* ============================================================
    GRADES

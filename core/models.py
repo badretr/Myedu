@@ -117,6 +117,35 @@ class AppointmentRequest(models.Model):
         return f"{self.parent.get_full_name()} - {self.requested_datetime:%d/%m/%Y %H:%M}"
 
 
+class TeacherLeaveRequest(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_ACCEPTED = 'accepted'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'En attente'),
+        (STATUS_ACCEPTED, 'Accepté'),
+        (STATUS_REJECTED, 'Refusé'),
+    ]
+
+    teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='leave_requests')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    reason = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    admin_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leave_requests')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Demande de congé'
+        verbose_name_plural = 'Demandes de congé'
+
+    def __str__(self):
+        return f"{self.teacher.get_full_name()} - {self.start_date:%d/%m/%Y} → {self.end_date:%d/%m/%Y}"
+
+
 class SchoolEvent(models.Model):
     TYPE_CHOICES = [
         ('vacances', 'Vacances'),

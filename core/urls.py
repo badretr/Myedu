@@ -5,6 +5,7 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.home_view, name='home'),
+    path('search/', views.global_search, name='global_search'),
     path('messages/', views.inbox_view, name='inbox'),
     path('messages/<int:pk>/', views.message_detail, name='message_detail'),
     path('messages/<int:pk>/reply/', views.message_reply, name='message_reply'),
@@ -16,6 +17,8 @@ urlpatterns = [
     path('suggestions/', views.suggestions_view, name='suggestions'),
     path('appointments/new/', views.appointment_request_create, name='appointment_request_create'),
     path('appointments/admin/', views.appointment_admin_view, name='appointment_admin'),
+    path('conges/nouvelle/', views.teacher_leave_request_create, name='teacher_leave_request_create'),
+    path('conges/administration/', views.leave_request_admin, name='leave_request_admin'),
     path('messages/<int:pk>/admin-delete/', views.message_admin_delete, name='message_admin_delete'),
     path('news/create/', views.news_create, name='news_create'),
     path('news/<int:pk>/delete/', views.news_delete, name='news_delete'),

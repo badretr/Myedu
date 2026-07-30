@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Recherche - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}"><i class="fas fa-home"></i> Accueil</a></li>
+  <li class="breadcrumb-item active">Recherche</li>
+</ol></nav>
+
+<div class="page-title mb-3"><i class="fas fa-search me-2"></i>Recherche</div>
+
+<form method="get" action="{% url 'core:global_search' %}" class="mb-4">
+  <div class="inbox-search" style="max-width:480px;">
+    <i class="fas fa-search"></i>
+    <input type="text" name="q" class="form-control" placeholder="Rechercher un élève, un message, un document..." value="{{ query }}" autofocus>
+  </div>
+</form>
+
+{% if not query %}
+<div class="card-myedu p-4 text-center text-muted">Tapez un mot-clé pour commencer la recherche.</div>
+{% elif query|length < 2 %}
+<div class="card-myedu p-4 text-center text-muted">Tapez au moins 2 caractères.</div>
+{% else %}
+
+  {% if pages %}
+  <div class="section-title"><i class="fas fa-compass me-2"></i>Pages</div>
+  <div class="row g-3 mb-4">
+    {% for p in pages %}
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ p.url }}" class="msg-card d-block text-decoration-none text-reset">
+        <div class="msg-card-title"><i class="fas {{ p.icon }} me-2" style="color:var(--accent-deep);"></i>{{ p.label }}</div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if students %}
+  <div class="section-title"><i class="fas fa-user-graduate me-2"></i>Élèves</div>
+  <div class="row g-3 mb-4">
+    {% for s in students %}
+    <div class="col-md-6 col-lg-4">
+      <a href="{% if user.is_admin_user %}{% url 'academics:student_history' s.pk %}{% elif s.enrollment.classroom_id %}{% url 'academics:teacher_classroom_notes' s.enrollment.classroom_id %}{% else %}#{% endif %}" class="msg-card d-block text-decoration-none text-reset">
+        <div class="msg-card-title">{{ s.get_full_name|default:s.username }}</div>
+        <div class="msg-card-preview mt-1">
+          {% if s.enrollment.classroom %}<i class="fas fa-chalkboard me-1"></i>{{ s.enrollment.classroom.name }}{% endif %}
+          {% if s.phone %} <i class="fas fa-phone ms-2 me-1"></i>{{ s.phone }}{% endif %}
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if messages_results %}
+  <div class="section-title"><i class="fas fa-envelope me-2"></i>Messages</div>
+  <div class="row g-3 mb-4">
+    {% for msg in messages_results %}
+    <div class="col-md-6 col-lg-4">
+      <a href="{% url 'core:message_detail' msg.pk %}" class="msg-card d-block text-decoration-none text-reset">
+        <div class="msg-card-title">{{ msg.title|upper }}</div>
+        <div class="msg-card-preview mt-1"><i class="fas fa-quote-left me-1"></i>{{ msg.content|truncatechars:80 }}</div>
+        <div class="msg-card-meta"><i class="fas fa-calendar me-1"></i>{{ msg.created_at|date:"d-m-Y" }}</div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if doc_requests %}
+  <div class="section-title"><i class="fas fa-file-alt me-2"></i>Demandes de documents</div>
+  <div class="row g-3 mb-4">
+    {% for d in doc_requests %}
+    <div class="col-md-6 col-lg-4">
+      <a href="{% if user.is_admin_user %}{% url 'documents:admin_requests' %}{% else %}{% url 'documents:documents' %}{% endif %}" class="msg-card d-block text-decoration-none text-reset">
+        <div class="msg-card-title">{{ d.get_doc_type_display }}</div>
+        <div class="msg-card-preview mt-1">
+          {% if user.is_admin_user %}<i class="fas fa-user me-1"></i>{{ d.student.get_full_name }} — {% endif %}<span class="badge-grade grade-na">{{ d.get_status_display }}</span>
+        </div>
+        <div class="msg-card-meta"><i class="fas fa-calendar me-1"></i>{{ d.created_at|date:"d-m-Y" }}</div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if resources %}
+  <div class="section-title"><i class="fas fa-folder-open me-2"></i>Ressources de cours</div>
+  <div class="row g-3 mb-4">
+    {% for r in resources %}
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ r.file.url }}" target="_blank" class="msg-card d-block text-decoration-none text-reset">
+        <div class="msg-card-title">{{ r.title }}</div>
+        <div class="msg-card-preview mt-1"><i class="fas fa-chalkboard me-1"></i>{{ r.subject.name }} — {{ r.classroom.name }}</div>
+        <div class="msg-card-meta"><i class="fas fa-calendar me-1"></i>{{ r.created_at|date:"d-m-Y" }} <i class="fas fa-download ms-2 me-1"></i>Télécharger</div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not pages and not students and not messages_results and not doc_requests and not resources %}
+  <div class="card-myedu p-4 text-center text-muted"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>Aucun résultat pour « {{ query }} ».</div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}

@@ -5,23 +5,43 @@
   <li class="breadcrumb-item"><a href="{% url 'core:home' %}"><i class="fas fa-home"></i> Accueil</a></li>
   <li class="breadcrumb-item active">Boite de reception</li>
 </ol></nav>
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
-    <div class="page-title"><i class="fas fa-envelope me-2"></i>Boite de reception</div>
+    <div class="page-title">
+      <i class="fas fa-envelope me-2"></i>Boite de reception
+      {% with total_unread=class_unread|add:admin_unread|add:teacher_unread|add:personal_unread %}
+      {% if total_unread %}<span class="badge rounded-pill ms-2" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.72rem;vertical-align:middle;">{{ total_unread }} non lu{{ total_unread|pluralize }}</span>{% endif %}
+      {% endwith %}
+    </div>
     <div class="page-subtitle">Mes messages</div>
   </div>
   {% if user.is_admin_user %}
   <a href="{% url 'core:message_create' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouveau message</a>
   {% elif user.is_teacher %}
   <a href="{% url 'core:teacher_message_compose' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouveau message</a>
+  {% elif user.is_parent %}
+  <a href="{% url 'core:parent_message_to_teacher' %}" class="btn btn-primary-myedu"><i class="fas fa-plus me-2"></i>Nouveau message</a>
   {% endif %}
 </div>
 
+<div class="inbox-toolbar d-flex flex-wrap align-items-center gap-2 mb-4">
+  <div class="inbox-search flex-grow-1">
+    <i class="fas fa-search"></i>
+    <input type="text" id="inboxSearch" class="form-control" placeholder="Rechercher un message...">
+  </div>
+  <div class="inbox-filter-tabs" role="group">
+    <button type="button" class="inbox-filter-btn active" data-filter="all">Tous</button>
+    <button type="button" class="inbox-filter-btn" data-filter="unread">Non lus</button>
+  </div>
+</div>
+
+<div id="inboxEmpty" class="col-12 text-center text-muted py-4 d-none"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>Aucun message ne correspond a votre recherche.</div>
+
 {% if not user.is_teacher %}
-<div class="section-title"><i class="fas fa-users me-2"></i>Messages de classe <small class="text-muted fw-normal" style="font-size:0.78rem;">Annonces de l'administration - non modifiables, lecture seule</small></div>
-<div class="row g-3 mb-4">
+<div class="section-title inbox-section" data-section><i class="fas fa-users me-2"></i>Messages de classe <small class="text-muted fw-normal" style="font-size:0.78rem;">Annonces de l'administration - non modifiables, lecture seule</small>{% if class_unread %}<span class="badge rounded-pill ms-2" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;">{{ class_unread }}</span>{% endif %}</div>
+<div class="row g-3 mb-4" data-section-body>
   {% for item in class_messages %}
-  <div class="col-md-6 col-lg-4">
+  <div class="col-md-6 col-lg-4 inbox-card-col" data-title="{{ item.msg.title|lower }} {{ item.msg.content|lower }}" data-unread="{{ item.is_read|yesno:'0,1' }}">
     <div class="msg-card position-relative highlighted {% if not item.is_read %}unread{% endif %}">
       <form method="post" action="{% url 'core:message_delete_for_me' item.msg.pk %}" class="position-absolute top-0 end-0 m-2" style="z-index:2;" onsubmit="event.stopPropagation(); return confirm('Supprimer ce message de votre boîte de réception ?');">
         {% csrf_token %}
@@ -29,7 +49,7 @@
       </form>
       <a href="{% url 'core:message_detail' item.msg.pk %}" class="stretched-link text-decoration-none text-reset">
         <div class="d-flex justify-content-between align-items-start">
-          <div class="msg-card-title">{{ item.msg.title|upper }}</div>
+          <div class="msg-card-title">{% if not item.is_read %}<span class="msg-dot"></span>{% endif %}{{ item.msg.title|upper }}</div>
           {% if item.msg.classroom %}<span class="badge" style="background:var(--warning-tint);color:var(--warning);font-size:0.7rem;">{{ item.msg.classroom.group }}</span>{% endif %}
         </div>
         <div class="msg-card-preview mt-2"><i class="fas fa-quote-left me-1"></i>{{ item.msg.content|truncatechars:80 }}</div>
@@ -49,10 +69,11 @@
 </div>
 {% endif %}
 
-<div class="section-title"><i class="fas fa-comments me-2"></i>{% if user.is_teacher %}Messages personnels{% else %}Messages avec l'administration{% endif %} <small class="text-muted fw-normal" style="font-size:0.78rem;">Vous pouvez repondre a ces messages</small></div>
-<div class="row g-3">
-  {% for item in personal_messages %}
-  <div class="col-md-6 col-lg-4">
+{% if user.is_teacher %}
+<div class="section-title inbox-section" data-section><i class="fas fa-user-shield me-2"></i>Avec l'administration{% if admin_unread %}<span class="badge rounded-pill ms-2" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;">{{ admin_unread }}</span>{% endif %}</div>
+<div class="row g-3 mb-4" data-section-body>
+  {% for item in admin_messages %}
+  <div class="col-md-6 col-lg-4 inbox-card-col" data-title="{{ item.msg.title|lower }} {{ item.msg.content|lower }}" data-unread="{{ item.is_read|yesno:'0,1' }}">
     <div class="msg-card position-relative {% if not item.is_read %}unread{% endif %}">
       <form method="post" action="{% url 'core:message_delete_for_me' item.msg.pk %}" class="position-absolute top-0 end-0 m-2" style="z-index:2;" onsubmit="event.stopPropagation(); return confirm('Supprimer ce message de votre boîte de réception ?');">
         {% csrf_token %}
@@ -60,9 +81,77 @@
       </form>
       <a href="{% url 'core:message_detail' item.msg.pk %}" class="stretched-link text-decoration-none text-reset">
         <div class="d-flex justify-content-between align-items-start">
-          <div class="msg-card-title">{{ item.msg.title|upper }}</div>
+          <div class="msg-card-title">{% if not item.is_read %}<span class="msg-dot"></span>{% endif %}{{ item.msg.title|upper }}</div>
           <span class="badge" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;"><i class="fas fa-reply me-1"></i>Repondable</span>
         </div>
+        <div class="msg-card-preview mt-2"><i class="fas fa-quote-left me-1"></i>{{ item.msg.content|truncatechars:80 }}</div>
+        <div class="msg-card-meta">
+          <i class="fas fa-calendar me-1"></i>{{ item.msg.created_at|date:"d-m-Y" }}
+          <i class="fas fa-clock ms-2 me-1"></i>{{ item.msg.created_at|time:"H:i" }}
+        </div>
+        {% if item.msg.attachment %}
+          <div class="mt-1" style="font-size:0.78rem;color:var(--danger);"><i class="fas fa-paperclip me-1"></i>Piece jointe</div>
+        {% endif %}
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center text-muted py-4"><i class="fas fa-user-shield fa-2x mb-2 d-block"></i>Aucun message avec l'administration.</div>
+  {% endfor %}
+</div>
+
+<div class="section-title inbox-section" data-section><i class="fas fa-people-roof me-2"></i>Avec les parents{% if teacher_unread %}<span class="badge rounded-pill ms-2" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;">{{ teacher_unread }}</span>{% endif %}</div>
+<div class="row g-3" data-section-body>
+  {% for item in teacher_messages %}
+  <div class="col-md-6 col-lg-4 inbox-card-col" data-title="{{ item.msg.title|lower }} {{ item.msg.content|lower }}" data-unread="{{ item.is_read|yesno:'0,1' }}">
+    <div class="msg-card position-relative {% if not item.is_read %}unread{% endif %}">
+      <form method="post" action="{% url 'core:message_delete_for_me' item.msg.pk %}" class="position-absolute top-0 end-0 m-2" style="z-index:2;" onsubmit="event.stopPropagation(); return confirm('Supprimer ce message de votre boîte de réception ?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Supprimer" style="width:28px;height:28px;padding:0;"><i class="fas fa-times"></i></button>
+      </form>
+      <a href="{% url 'core:message_detail' item.msg.pk %}" class="stretched-link text-decoration-none text-reset">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="msg-card-title">{% if not item.is_read %}<span class="msg-dot"></span>{% endif %}{{ item.msg.title|upper }}</div>
+          <span class="badge" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;"><i class="fas fa-reply me-1"></i>Repondable</span>
+        </div>
+        {% if item.correspondent %}
+        <div class="msg-card-from"><i class="fas fa-user me-1"></i>{{ item.correspondent.get_full_name|default:item.correspondent.phone|default:"Parent" }}</div>
+        {% endif %}
+        <div class="msg-card-preview mt-2"><i class="fas fa-quote-left me-1"></i>{{ item.msg.content|truncatechars:80 }}</div>
+        <div class="msg-card-meta">
+          <i class="fas fa-calendar me-1"></i>{{ item.msg.created_at|date:"d-m-Y" }}
+          <i class="fas fa-clock ms-2 me-1"></i>{{ item.msg.created_at|time:"H:i" }}
+        </div>
+        {% if item.msg.attachment %}
+          <div class="mt-1" style="font-size:0.78rem;color:var(--danger);"><i class="fas fa-paperclip me-1"></i>Piece jointe</div>
+        {% endif %}
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center text-muted py-4"><i class="fas fa-people-roof fa-2x mb-2 d-block"></i>Aucun message avec un parent.</div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="section-title inbox-section" data-section><i class="fas fa-comments me-2"></i>Messages personnels <small class="text-muted fw-normal" style="font-size:0.78rem;">Vous pouvez repondre a ces messages</small>{% if personal_unread %}<span class="badge rounded-pill ms-2" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;">{{ personal_unread }}</span>{% endif %}</div>
+<div class="row g-3" data-section-body>
+  {% for item in personal_messages %}
+  <div class="col-md-6 col-lg-4 inbox-card-col" data-title="{{ item.msg.title|lower }} {{ item.msg.content|lower }}" data-unread="{{ item.is_read|yesno:'0,1' }}">
+    <div class="msg-card position-relative {% if not item.is_read %}unread{% endif %}">
+      <form method="post" action="{% url 'core:message_delete_for_me' item.msg.pk %}" class="position-absolute top-0 end-0 m-2" style="z-index:2;" onsubmit="event.stopPropagation(); return confirm('Supprimer ce message de votre boîte de réception ?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Supprimer" style="width:28px;height:28px;padding:0;"><i class="fas fa-times"></i></button>
+      </form>
+      <a href="{% url 'core:message_detail' item.msg.pk %}" class="stretched-link text-decoration-none text-reset">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="msg-card-title">{% if not item.is_read %}<span class="msg-dot"></span>{% endif %}{{ item.msg.title|upper }}</div>
+          <span class="badge" style="background:var(--petrol-tint);color:var(--petrol-deep);font-size:0.7rem;"><i class="fas fa-reply me-1"></i>Repondable</span>
+        </div>
+        {% if item.correspondent %}
+        <div class="msg-card-from">
+          <i class="fas {% if item.correspondent.role == 'admin' %}fa-user-shield{% elif item.correspondent.role == 'teacher' %}fa-chalkboard-teacher{% else %}fa-user{% endif %} me-1"></i>{% if item.correspondent.role == 'admin' %}Administration{% elif item.correspondent.role == 'teacher' %}{{ item.correspondent.get_full_name|default:item.correspondent.phone|default:"Enseignant" }}{% else %}{{ item.correspondent.get_full_name|default:"Utilisateur" }}{% endif %}
+        </div>
+        {% endif %}
         <div class="msg-card-preview mt-2"><i class="fas fa-quote-left me-1"></i>{{ item.msg.content|truncatechars:80 }}</div>
         <div class="msg-card-meta">
           <i class="fas fa-calendar me-1"></i>{{ item.msg.created_at|date:"d-m-Y" }}
@@ -78,4 +167,51 @@
   <div class="col-12 text-center text-muted py-4"><i class="fas fa-comments fa-2x mb-2 d-block"></i>Aucun message personnel.</div>
   {% endfor %}
 </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var searchInput = document.getElementById('inboxSearch');
+  var filterBtns = document.querySelectorAll('.inbox-filter-btn');
+  var cards = document.querySelectorAll('.inbox-card-col');
+  var sections = document.querySelectorAll('[data-section]');
+  var emptyState = document.getElementById('inboxEmpty');
+  var currentFilter = 'all';
+
+  function applyFilters() {
+    var query = (searchInput.value || '').trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (card) {
+      var matchesSearch = !query || card.getAttribute('data-title').indexOf(query) !== -1;
+      var matchesFilter = currentFilter === 'all' || card.getAttribute('data-unread') === '1';
+      var visible = matchesSearch && matchesFilter;
+      card.classList.toggle('d-none', !visible);
+      if (visible) anyVisible = true;
+    });
+    sections.forEach(function (title) {
+      var body = title.nextElementSibling;
+      if (!body || !body.hasAttribute('data-section-body')) return;
+      var hasVisibleCard = body.querySelectorAll('.inbox-card-col:not(.d-none)').length > 0;
+      var hasEmptyMsg = body.querySelectorAll('.inbox-card-col').length === 0;
+      var show = hasVisibleCard || hasEmptyMsg;
+      title.classList.toggle('d-none', !show);
+      body.classList.toggle('d-none', !show);
+    });
+    emptyState.classList.toggle('d-none', anyVisible || cards.length === 0);
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  filterBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filterBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentFilter = btn.getAttribute('data-filter');
+      applyFilters();
+    });
+  });
+});
+</script>
 {% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Mon emploi du temps - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Mon emploi du temps</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <div class="page-title"><i class="fas fa-calendar-alt me-2"></i>Mon emploi du temps</div>
+    <div class="page-subtitle">Heures de cours générées à partir des emplois du temps des classes</div>
+  </div>
+</div>
+
+{% if grid %}
+  <div class="card-myedu p-3">
+    <div class="table-responsive">
+      <table class="table table-myedu table-bordered mb-0" style="min-width:900px;">
+        <thead>
+          <tr>
+            <th style="width:90px;">Horaire</th>
+            {% for day, label in days %}<th class="text-center">{{ label }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in grid %}
+          {% if row.is_break %}
+          <tr style="background:#f1f5f9;">
+            <td class="fw-semibold text-nowrap">12h - 14h</td>
+            <td colspan="{{ days|length }}" class="text-center fw-semibold text-muted">
+              <i class="fas fa-utensils me-2"></i>Pause déjeuner
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td class="fw-semibold text-nowrap">{{ row.hour }}h - {{ row.hour|add:1 }}h</td>
+            {% for entry in row.cells %}
+            <td class="text-center align-middle">
+              {% if entry %}
+              <div class="fw-semibold">{{ entry.subject.name }}</div>
+              <div class="text-muted" style="font-size:0.75rem;">{{ entry.classroom.name }}{% if entry.session_type == 'tp' %} <span class="badge bg-warning text-dark ms-1">TP</span>{% endif %}</div>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="card-myedu p-5 text-center">
+    <i class="fas fa-calendar-times fa-4x mb-3" style="color:#cbd5e1;"></i>
+    <div style="font-size:1.1rem;font-weight:600;color:#64748b;">Aucune heure de cours pour le moment</div>
+    <div class="text-muted mt-1" style="font-size:0.9rem;">Votre emploi du temps apparaîtra ici dès que l'administration aura saisi vos créneaux dans l'emploi du temps des classes.</div>
+  </div>
+{% endif %}
+{% endblock %}

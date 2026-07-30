@@ -110,7 +110,7 @@
             <div class="history-preview">{{ msg.content|truncatechars:90 }}</div>
           </td>
           <td>
-            <span class="history-badge history-badge-class"><i class="fas fa-user me-1"></i>{% if msg.recipient.role == 'admin' %}Administration{% else %}{{ msg.recipient.get_full_name|default:msg.recipient.children.first.father_name|default:msg.recipient.children.first.mother_name|default:msg.recipient.username }}{% endif %}</span>
+            <span class="history-badge history-badge-class"><i class="fas fa-user me-1"></i>{% if msg.recipient.role == 'admin' %}Administration{% else %}{% with child=msg.recipient.children.first %}{% if msg.recipient.get_full_name %}{{ msg.recipient.get_full_name }}{% elif child.father_name %}{{ child.father_name }}{% elif child.mother_name %}{{ child.mother_name }}{% else %}{{ msg.recipient.username }}{% endif %}{% endwith %}{% endif %}</span>
           </td>
           <td>
             {% if msg.reply_count %}

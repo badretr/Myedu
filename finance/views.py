@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import PaymentTranche, ExtraService
+from .models import PaymentTranche, ExtraService, AuthorizedPickupPerson
 from academics.models import StudentEnrollment, Classroom
 
 
@@ -190,6 +190,25 @@ def services_admin(request):
         elif action == "delete":
             ExtraService.objects.filter(pk=request.POST.get("service_id")).delete()
             messages.success(request, "Service supprimé.")
+        elif action == "add_pickup_person":
+            enrollment = get_object_or_404(StudentEnrollment, pk=request.POST.get("enrollment"))
+            full_name = request.POST.get("full_name", "").strip()
+            if full_name:
+                AuthorizedPickupPerson.objects.create(
+                    enrollment=enrollment,
+                    full_name=full_name,
+                    relationship=request.POST.get("relationship", "autre"),
+                    phone_number=request.POST.get("phone_number", "").strip(),
+                    id_card_number=request.POST.get("id_card_number", "").strip(),
+                )
+                messages.success(request, "Personne autorisée ajoutée.")
+        elif action == "toggle_pickup_person":
+            person = get_object_or_404(AuthorizedPickupPerson, pk=request.POST.get("person_id"))
+            person.is_active = not person.is_active
+            person.save(update_fields=["is_active"])
+        elif action == "delete_pickup_person":
+            AuthorizedPickupPerson.objects.filter(pk=request.POST.get("person_id")).delete()
+            messages.success(request, "Personne autorisée supprimée.")
         return redirect("finance:services_admin")
     services = ExtraService.objects.select_related(
         "enrollment__student", "enrollment__classroom"
@@ -197,9 +216,13 @@ def services_admin(request):
     enrollments = StudentEnrollment.objects.filter(is_active=True).select_related(
         "student", "classroom"
     ).order_by("classroom__name", "student__first_name")
+    pickup_persons = AuthorizedPickupPerson.objects.select_related(
+        "enrollment__student", "enrollment__classroom"
+    ).order_by("enrollment__classroom__name", "enrollment__student__first_name")
     return render(request, "finance/services.html", {
         "services": services,
         "enrollments": enrollments,
+        "pickup_persons": pickup_persons,
     })
 
 

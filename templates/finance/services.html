@@ -80,4 +80,81 @@
     </div>
   </div>
 </div>
+
+<div class="page-title mb-3 mt-5"><i class="fas fa-user-check me-2"></i>Personnes autorisées à récupérer l'élève</div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-myedu p-4">
+      <div class="section-title">Ajouter une personne autorisée</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_pickup_person">
+        <div class="mb-3"><label class="form-label">Élève</label>
+          <select name="enrollment" class="form-select" required>
+            <option value="">— Choisir —</option>
+            {% for enr in enrollments %}
+            <option value="{{ enr.pk }}">{{ enr.student.get_full_name }} — {{ enr.classroom }}</option>
+            {% endfor %}
+          </select></div>
+        <div class="mb-3"><label class="form-label">Nom complet</label>
+          <input type="text" name="full_name" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label">Lien avec l'élève</label>
+          <select name="relationship" class="form-select">
+            <option value="grand_parent">Grand-parent</option>
+            <option value="oncle_tante">Oncle / Tante</option>
+            <option value="frere_soeur">Frère / Sœur majeur(e)</option>
+            <option value="nounou">Nourrice / Garde d'enfant</option>
+            <option value="autre">Autre</option>
+          </select></div>
+        <div class="mb-3"><label class="form-label">Téléphone</label>
+          <input type="text" name="phone_number" class="form-control"></div>
+        <div class="mb-3"><label class="form-label">N° CIN</label>
+          <input type="text" name="id_card_number" class="form-control"></div>
+        <button type="submit" class="btn btn-primary-myedu w-100"><i class="fas fa-plus me-2"></i>Ajouter</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card-myedu">
+      <div class="card-header"><i class="fas fa-list me-2"></i>Personnes autorisées</div>
+      <div class="table-responsive">
+        <table class="table table-myedu mb-0">
+          <thead><tr>
+            <th>Élève</th><th>Classe</th><th>Nom</th><th>Lien</th><th>Téléphone</th><th>CIN</th><th>Statut</th><th class="text-end">Action</th>
+          </tr></thead>
+          <tbody>
+            {% for p in pickup_persons %}
+            <tr {% if not p.is_active %}style="opacity:0.55;"{% endif %}>
+              <td>{{ p.enrollment.student.get_full_name }}</td>
+              <td>{{ p.enrollment.classroom }}</td>
+              <td>{{ p.full_name }}</td>
+              <td>{{ p.get_relationship_display }}</td>
+              <td>{{ p.phone_number|default:"—" }}</td>
+              <td>{{ p.id_card_number|default:"—" }}</td>
+              <td>
+                <form method="post" class="d-inline">{% csrf_token %}
+                  <input type="hidden" name="action" value="toggle_pickup_person">
+                  <input type="hidden" name="person_id" value="{{ p.pk }}">
+                  <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" title="Activer/désactiver">
+                    {% if p.is_active %}<span class="badge bg-success">Actif</span>{% else %}<span class="badge bg-secondary">Suspendu</span>{% endif %}
+                  </button>
+                </form>
+              </td>
+              <td class="text-end">
+                <form method="post" class="d-inline" onsubmit="return confirm('Supprimer cette autorisation ?');">{% csrf_token %}
+                  <input type="hidden" name="action" value="delete_pickup_person">
+                  <input type="hidden" name="person_id" value="{{ p.pk }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Aucune personne autorisée pour le moment.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

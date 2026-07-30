@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Cahier de textes - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Cahier de textes</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+  <div class="page-title"><i class="fas fa-book-open me-2"></i>Cahier de textes</div>
+</div>
+<div class="page-subtitle">Travail fait et devoirs saisis par les enseignants, organisés par classe.</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-4">
+    <div class="card-myedu p-4 d-flex flex-row align-items-center gap-3">
+      <div class="home-tile-icon icon-cyan mb-0"><i class="fas fa-book-open"></i></div>
+      <div>
+        <div class="amount-value">{{ total_entries }}</div>
+        <div class="info-label">Entrées au total</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card-myedu p-4 d-flex flex-row align-items-center gap-3">
+      <div class="home-tile-icon icon-yellow mb-0"><i class="fas fa-pen"></i></div>
+      <div>
+        <div class="amount-value">{{ total_homework }}</div>
+        <div class="info-label">Avec devoirs</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Par classe</div>
+<div class="row g-3 mb-4">
+  {% for cl in classrooms %}
+  <div class="col-md-4">
+    <a href="{% url 'academics:teacher_lessons' cl.pk %}" class="card-myedu p-4 d-block text-decoration-none" style="color:inherit;">
+      <div style="font-weight:700;font-size:1.02rem;color:var(--accent-deep);">{{ cl.name }}</div>
+      <div style="color:var(--muted);font-size:0.83rem;">{{ cl.specialty }} | {{ cl.academic_year }}</div>
+      <div class="d-flex gap-2 mt-3">
+        <span class="badge-grade {% if cl.lesson_count %}grade-na{% else %}grade-bad{% endif %}"><i class="fas fa-book-open me-1"></i>{{ cl.lesson_count }} entrée{{ cl.lesson_count|pluralize }}</span>
+      </div>
+    </a>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center text-muted py-5">Aucune classe créée.</div>
+  {% endfor %}
+</div>
+
+<div class="section-title">Dernières entrées</div>
+<div class="card-myedu">
+  <div class="table-responsive">
+    <table class="table table-myedu mb-0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Classe</th>
+          <th>Matière</th>
+          <th>Enseignant</th>
+          <th>Travail fait en classe</th>
+          <th>Devoirs</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in recent_entries %}
+        <tr>
+          <td class="text-nowrap">{{ e.date|date:"d/m/Y" }}</td>
+          <td class="text-nowrap"><a href="{% url 'academics:teacher_lessons' e.classroom_id %}" style="color:var(--accent-deep);font-weight:600;text-decoration:none;">{{ e.classroom.name }}</a></td>
+          <td class="text-nowrap">{{ e.subject.name }}</td>
+          <td class="text-nowrap">{% if e.teacher %}{{ e.teacher.get_full_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td style="max-width:320px;">{{ e.content|truncatechars:90 }}</td>
+          <td style="max-width:220px;">
+            {% if e.homework %}
+              {{ e.homework|truncatechars:60 }}{% if e.homework_due %} <span class="text-muted">(pour le {{ e.homework_due|date:"d/m/Y" }})</span>{% endif %}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Aucune entrée saisie par les enseignants pour le moment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Demande de congé - Myedu{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
+  <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
+  <li class="breadcrumb-item active">Demande de congé</li>
+</ol></nav>
+
+<div class="card-myedu p-4 form-page-center">
+  <div class="section-title"><i class="fas fa-plane-departure me-2"></i>Demander un congé</div>
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6">
+        <label class="form-label">Du</label>
+        <input type="date" name="start_date" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label">Au</label>
+        <input type="date" name="end_date" class="form-control" required>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Motif</label>
+      <textarea name="reason" class="form-control" rows="4" placeholder="Expliquez brièvement le motif du congé"></textarea>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary-myedu"><i class="fas fa-paper-plane me-2"></i>Envoyer la demande</button>
+      <a href="{% url 'core:home' %}" class="btn btn-outline-myedu">Retour</a>
+    </div>
+  </form>
+</div>
+
+<div class="section-title mt-4"><i class="fas fa-clock me-2"></i>Mes demandes</div>
+{% for req in my_requests %}
+<div class="news-item home-surface">
+  <div class="d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <div class="news-title">{{ req.start_date|date:"d/m/Y" }} — {{ req.end_date|date:"d/m/Y" }}</div>
+      <div class="news-date">{{ req.created_at|date:"d/m/Y H:i" }}</div>
+      <p class="mb-0" style="white-space:pre-wrap;overflow-wrap:anywhere;">{{ req.reason|default:"Sans motif" }}</p>
+      {% if req.admin_notes %}
+      <div class="mt-2 p-2 rounded-3" style="background:#f8fafc;">{{ req.admin_notes }}</div>
+      {% endif %}
+    </div>
+    <span class="badge {% if req.status == 'pending' %}bg-warning text-dark{% elif req.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %}">
+      {% if req.status == 'pending' %}En attente{% elif req.status == 'accepted' %}Accepté{% else %}Refusé{% endif %}
+    </span>
+  </div>
+</div>
+{% empty %}
+<div class="text-muted py-3">Aucune demande pour le moment.</div>
+{% endfor %}
+{% endblock %}

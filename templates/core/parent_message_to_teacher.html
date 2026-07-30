@@ -1,29 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Contacter un enseignant - Myedu{% endblock %}
+{% block title %}Contacter enseignant / direction - Myedu{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
   <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
   <li class="breadcrumb-item"><a href="{% url 'core:inbox' %}">Messages</a></li>
-  <li class="breadcrumb-item active">Contacter un enseignant</li>
+  <li class="breadcrumb-item active">Contacter enseignant / direction</li>
 </ol></nav>
 <div class="card-myedu p-4 form-page-center">
-  <div class="section-title"><i class="fas fa-chalkboard-teacher me-2"></i>Contacter un enseignant</div>
-  <div class="page-subtitle mb-4">
-    {% if children.count == 1 %}
-      Envoyez un message à un enseignant de <strong>{{ children.first.get_full_name }}</strong>
-    {% else %}
-      Envoyez un message à un enseignant de votre enfant
-    {% endif %}
-  </div>
+  <div class="section-title"><i class="fas fa-paper-plane me-2"></i>Envoyer un message</div>
+  <div class="page-subtitle mb-4">Choisissez un destinataire : un enseignant de votre enfant ou la direction de l'établissement</div>
 
-  {% if not teachers %}
-  <div class="text-center py-5">
-    <i class="fas fa-chalkboard-teacher fa-3x mb-3 d-block text-muted"></i>
-    <div class="text-muted">
-      Aucun enseignant trouvé pour votre{% if children.count > 1 %}s{% endif %} enfant{% if children.count > 1 %}s{% endif %}.
-    </div>
-  </div>
-  {% else %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="mb-3">
@@ -31,8 +17,25 @@
       <input type="text" name="title" class="form-control" required placeholder="Objet du message">
     </div>
     <div class="mb-3">
+      <label class="form-label">Destinataire</label>
+      <select name="target" id="target-select" class="form-select">
+        <option value="teacher">Un enseignant</option>
+        <option value="admin">Direction de l'établissement</option>
+      </select>
+    </div>
+    <div class="mb-3" id="admin-info" style="display:none;background:#f0f7ff;border-radius:8px;padding:12px 16px;">
+      <i class="fas fa-info-circle me-2 text-primary"></i>
+      Le message sera envoyé à la direction de l'établissement.
+    </div>
+    <div class="mb-3" id="teacher-block">
+      {% if not teachers %}
+      <div class="text-muted">
+        <i class="fas fa-chalkboard-teacher me-1"></i>
+        Aucun enseignant trouvé pour votre{% if children.count > 1 %}s{% endif %} enfant{% if children.count > 1 %}s{% endif %}.
+      </div>
+      {% else %}
       <label class="form-label">Enseignant</label>
-      <select name="teacher" class="form-select" required>
+      <select name="teacher" class="form-select">
         <option value="">-- Choisir un enseignant --</option>
         {% for teacher in teachers %}
         <option value="{{ teacher.pk }}">
@@ -47,6 +50,7 @@
         </option>
         {% endfor %}
       </select>
+      {% endif %}
     </div>
     {% if children.count > 1 %}
     <div class="mb-3">
@@ -72,6 +76,23 @@
       <a href="{% url 'core:inbox' %}" class="btn btn-outline-myedu">Annuler</a>
     </div>
   </form>
-  {% endif %}
 </div>
+<script>
+(function () {
+  const targetSelect = document.getElementById('target-select');
+  const adminInfo = document.getElementById('admin-info');
+  const teacherBlock = document.getElementById('teacher-block');
+  const teacherSelect = teacherBlock.querySelector('select[name="teacher"]');
+
+  function sync() {
+    const isAdmin = targetSelect.value === 'admin';
+    adminInfo.style.display = isAdmin ? '' : 'none';
+    teacherBlock.style.display = isAdmin ? 'none' : '';
+    if (teacherSelect) teacherSelect.required = !isAdmin;
+  }
+
+  targetSelect.addEventListener('change', sync);
+  sync();
+})();
+</script>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Gestion des rendez-vous - Myedu{% endblock %}
+{% block title %}Demandes de congé - Myedu{% endblock %}
 {% block content %}
 <style>
   .history-table details > summary { list-style: none; }
@@ -10,19 +10,19 @@
 <div class="history-page">
 <nav aria-label="breadcrumb"><ol class="breadcrumb breadcrumb-myedu">
   <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Accueil</a></li>
-  <li class="breadcrumb-item active">Rendez-vous administration</li>
+  <li class="breadcrumb-item active">Demandes de congé</li>
 </ol></nav>
 
 <div class="history-header d-flex justify-content-between align-items-start mb-3 flex-wrap gap-3">
   <div class="history-header-left">
-    <div class="page-title mb-0"><i class="fas fa-calendar-check me-2"></i>Demandes de rendez-vous</div>
-    <div class="page-subtitle mt-2">Demandes envoyées par les parents</div>
+    <div class="page-title mb-0"><i class="fas fa-plane-departure me-2"></i>Demandes de congé</div>
+    <div class="page-subtitle mt-2">Demandes envoyées par les enseignants</div>
   </div>
 </div>
 
 <div class="d-flex flex-wrap gap-3 mb-4">
   <div class="history-summary">
-    <div class="history-summary-icon"><i class="fas fa-calendar-check"></i></div>
+    <div class="history-summary-icon"><i class="fas fa-plane-departure"></i></div>
     <div class="history-summary-text"><span class="history-summary-value">{{ total_count }}</span><span class="history-summary-label">Au total</span></div>
   </div>
   <div class="history-summary">
@@ -31,11 +31,11 @@
   </div>
   <div class="history-summary">
     <div class="history-summary-icon" style="background:linear-gradient(135deg,var(--success),#22c55e);"><i class="fas fa-check"></i></div>
-    <div class="history-summary-text"><span class="history-summary-value">{{ accepted_count }}</span><span class="history-summary-label">Acceptés</span></div>
+    <div class="history-summary-text"><span class="history-summary-value">{{ accepted_count }}</span><span class="history-summary-label">Acceptées</span></div>
   </div>
   <div class="history-summary">
     <div class="history-summary-icon" style="background:linear-gradient(135deg,var(--danger),#ef4444);"><i class="fas fa-times"></i></div>
-    <div class="history-summary-text"><span class="history-summary-value">{{ rejected_count }}</span><span class="history-summary-label">Refusés</span></div>
+    <div class="history-summary-text"><span class="history-summary-value">{{ rejected_count }}</span><span class="history-summary-label">Refusées</span></div>
   </div>
 </div>
 
@@ -44,32 +44,32 @@
     <table class="table table-myedu history-table mb-0">
       <thead>
         <tr>
-          <th>Parent</th>
-          <th>Date demandée</th>
+          <th>Enseignant</th>
+          <th>Période</th>
           <th>Motif</th>
           <th>Statut</th>
           <th class="text-end">Action</th>
         </tr>
       </thead>
       <tbody>
-        {% for appt in appointments %}
+        {% for req in leave_requests %}
         <tr>
           <td>
             <div class="d-flex align-items-center gap-2">
-              <span class="navbar-avatar-placeholder">{{ appt.parent.first_name|first|upper }}{{ appt.parent.last_name|first|upper }}</span>
-              <span class="history-sender">{{ appt.parent.get_full_name }}</span>
+              <span class="navbar-avatar-placeholder">{{ req.teacher.first_name|first|upper }}{{ req.teacher.last_name|first|upper }}</span>
+              <span class="history-sender">{{ req.teacher.get_full_name }}</span>
             </div>
           </td>
           <td>
-            <div class="history-date">{{ appt.requested_datetime|date:"d/m/Y" }}</div>
-            <div class="history-time">{{ appt.requested_datetime|time:"H:i" }}</div>
+            <div class="history-date">{{ req.start_date|date:"d/m/Y" }} → {{ req.end_date|date:"d/m/Y" }}</div>
+            <div class="history-time">{{ req.end_date|timeuntil:req.start_date }}</div>
           </td>
-          <td class="history-preview">{{ appt.reason|default:"—"|truncatechars:80 }}</td>
+          <td class="history-preview">{{ req.reason|default:"—"|truncatechars:80 }}</td>
           <td>
-            {% if appt.status == 'pending' %}<span class="history-badge" style="background:var(--warning-tint);color:var(--warning);">En attente</span>
-            {% elif appt.status == 'accepted' %}<span class="history-badge" style="background:var(--success-tint);color:var(--success);">Accepté</span>
+            {% if req.status == 'pending' %}<span class="history-badge" style="background:var(--warning-tint);color:var(--warning);">En attente</span>
+            {% elif req.status == 'accepted' %}<span class="history-badge" style="background:var(--success-tint);color:var(--success);">Accepté</span>
             {% else %}<span class="history-badge" style="background:var(--danger-tint);color:var(--danger);">Refusé</span>{% endif %}
-            {% if appt.admin_notes %}<div class="history-preview mt-1" style="max-width:200px;"><i class="fas fa-comment-dots me-1"></i>{{ appt.admin_notes|truncatechars:50 }}</div>{% endif %}
+            {% if req.admin_notes %}<div class="history-preview mt-1" style="max-width:200px;"><i class="fas fa-comment-dots me-1"></i>{{ req.admin_notes|truncatechars:50 }}</div>{% endif %}
           </td>
           <td class="text-end">
             <details>
@@ -78,8 +78,8 @@
               </summary>
               <form method="post" class="d-grid gap-2 mt-2 text-start" style="min-width:220px;">
                 {% csrf_token %}
-                <input type="hidden" name="appointment_id" value="{{ appt.pk }}">
-                <textarea name="admin_notes" class="form-control form-control-sm" rows="2" placeholder="Note pour le parent">{{ appt.admin_notes }}</textarea>
+                <input type="hidden" name="request_id" value="{{ req.pk }}">
+                <textarea name="admin_notes" class="form-control form-control-sm" rows="2" placeholder="Note pour l'enseignant">{{ req.admin_notes }}</textarea>
                 <div class="d-flex gap-2">
                   <button type="submit" name="action" value="accepted" class="btn btn-sm btn-success flex-fill"><i class="fas fa-check me-1"></i>Accepter</button>
                   <button type="submit" name="action" value="rejected" class="btn btn-sm btn-danger flex-fill"><i class="fas fa-times me-1"></i>Refuser</button>
@@ -92,8 +92,8 @@
         <tr>
           <td colspan="5">
             <div class="history-empty">
-              <i class="fas fa-calendar-check fa-2x" style="color:var(--line);"></i>
-              <div>Aucune demande de rendez-vous.</div>
+              <i class="fas fa-plane-departure fa-2x" style="color:var(--line);"></i>
+              <div>Aucune demande de congé pour le moment.</div>
             </div>
           </td>
         </tr>

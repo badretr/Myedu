@@ -369,6 +369,28 @@ def build_schedule_grid(classroom):
     return grid, entries.exists()
 
 
+def build_teacher_schedule_grid(teacher):
+    """Grille [heure][jour] -> ScheduleEntry ou None, agrégée sur toutes les classes de l'enseignant.
+
+    Généré à partir des emplois du temps des classes : un créneau appartient à
+    l'enseignant s'il en est le professeur de cours, ou le professeur de TP
+    (avec repli sur le professeur de cours si aucun professeur de TP n'est défini).
+    """
+    entries = ScheduleEntry.objects.filter(
+        Q(session_type='cours', subject__teacher=teacher)
+        | Q(session_type='tp', subject__teacher_tp=teacher)
+        | Q(session_type='tp', subject__teacher_tp__isnull=True, subject__teacher=teacher)
+    ).select_related("subject", "classroom", "subject__teacher", "subject__teacher_tp")
+    by_slot = {(e.day, e.start_hour): e for e in entries}
+    grid = []
+    for hour in ScheduleEntry.teaching_hours():
+        if hour == ScheduleEntry.BREAK_END:
+            grid.append({"is_break": True})
+        row = {"hour": hour, "cells": [by_slot.get((day, hour)) for day, _ in ScheduleEntry.DAY_CHOICES]}
+        grid.append(row)
+    return grid, entries.exists()
+
+
 def _appreciation(avg):
     if avg is None:
         return "—"
@@ -534,6 +556,18 @@ def schedule_view(request):
         "enrollment": enrollment,
         "schedule": schedule,
         "grid": grid,
+        "days": ScheduleEntry.DAY_CHOICES,
+    })
+
+
+@login_required
+def teacher_schedule(request):
+    """Emploi du temps personnel de l'enseignant, généré à partir des emplois du temps des classes."""
+    if not request.user.is_teacher:
+        return redirect("core:home")
+    grid, has_entries = build_teacher_schedule_grid(request.user)
+    return render(request, "academics/teacher_schedule.html", {
+        "grid": grid if has_entries else None,
         "days": ScheduleEntry.DAY_CHOICES,
     })
 
@@ -1039,6 +1073,27 @@ def notes_admin_detail(request, classroom_pk):
 
 
 @login_required
+def lessons_admin(request):
+    """Vue d'ensemble du cahier de textes pour la direction : ce que les enseignants ont saisi, par classe."""
+    if not request.user.is_admin_user:
+        return redirect("core:home")
+    classrooms = Classroom.objects.annotate(
+        lesson_count=Count("lesson_entries"),
+    ).order_by("name")
+    total_entries = LessonEntry.objects.count()
+    total_homework = LessonEntry.objects.exclude(homework="").count()
+    recent_entries = LessonEntry.objects.select_related(
+        "classroom", "subject", "teacher"
+    ).order_by("-date", "-created_at")[:20]
+    return render(request, "academics/lessons_admin.html", {
+        "classrooms": classrooms,
+        "total_entries": total_entries,
+        "total_homework": total_homework,
+        "recent_entries": recent_entries,
+    })
+
+
+@login_required
 def my_notes(request):
     enrollment = request.user.linked_enrollment
     if enrollment:
@@ -1349,7 +1404,7 @@ def teacher_lessons(request, classroom_pk):
                 messages.success(request, "Entrée supprimée.")
         return redirect("academics:teacher_lessons", classroom_pk=classroom.pk)
 
-    entries = LessonEntry.objects.filter(classroom=classroom).select_related("subject", "teacher")[:50]
+    entries = LessonEntry.objects.filter(classroom=classroom).select_related("subject", "teacher")
     return render(request, "academics/teacher_lessons.html", {
         "classroom": classroom,
         "my_subjects": my_subjects,

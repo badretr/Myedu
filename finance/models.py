@@ -56,3 +56,29 @@ class ExtraService(models.Model):
 
     def __str__(self):
         return f"{self.enrollment.student.get_full_name()} - {self.get_service_type_display()}"
+
+
+class AuthorizedPickupPerson(models.Model):
+    """Personne autorisée à récupérer l'élève, en plus des parents (transport/sortie)."""
+    RELATIONSHIP_CHOICES = [
+        ('grand_parent', 'Grand-parent'),
+        ('oncle_tante', 'Oncle / Tante'),
+        ('frere_soeur', 'Frère / Sœur majeur(e)'),
+        ('nounou', 'Nourrice / Garde d\'enfant'),
+        ('autre', 'Autre'),
+    ]
+    enrollment = models.ForeignKey(StudentEnrollment, on_delete=models.CASCADE, related_name='pickup_persons')
+    full_name = models.CharField(max_length=100, verbose_name='Nom complet')
+    relationship = models.CharField(max_length=20, choices=RELATIONSHIP_CHOICES, default='autre', verbose_name='Lien avec l\'élève')
+    phone_number = models.CharField(max_length=20, blank=True, verbose_name='Téléphone')
+    id_card_number = models.CharField(max_length=30, blank=True, verbose_name='N° CIN')
+    is_active = models.BooleanField(default=True, verbose_name='Autorisation active')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['full_name']
+        verbose_name = 'Personne autorisée à récupérer l\'élève'
+        verbose_name_plural = 'Personnes autorisées à récupérer l\'élève'
+
+    def __str__(self):
+        return f"{self.full_name} ({self.get_relationship_display()}) - {self.enrollment.student.get_full_name()}"

@@ -5,13 +5,15 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from accounts.models import CustomUser
-from academics.models import Classroom, Subject as AcademicSubject
+from academics.models import Classroom, CourseResource, Subject as AcademicSubject
+from documents.models import DocumentRequest
 
-from .models import AppointmentRequest, Message, News, Notification, SchoolEvent, Suggestion
+from .models import AppointmentRequest, Message, News, Notification, SchoolEvent, Suggestion, TeacherLeaveRequest
 
 
 def notify_roles(role, title, content='', target_url=''):
@@ -190,24 +192,180 @@ def get_user_messages(user):
     return result.exclude(deleted_by=user).distinct()
 
 
+def get_navigable_pages(user):
+    """Pages du menu accessibles à cet utilisateur, pour le raccourci de recherche rapide."""
+    pages = [('Accueil', reverse('core:home'), 'fa-home')]
+
+    if user.is_admin_user:
+        pages += [
+            ('Messages', reverse('core:message_history'), 'fa-envelope'),
+            ('Gérer comptes', reverse('accounts:user_list'), 'fa-users'),
+            ('Créer compte élève', reverse('accounts:user_create'), 'fa-user-plus'),
+            ('Créer enseignant', reverse('accounts:teacher_create'), 'fa-chalkboard-teacher'),
+            ('Gérer classes', reverse('academics:classroom_list'), 'fa-chalkboard'),
+            ('Suivi disciplinaire', reverse('academics:notes_admin'), 'fa-gavel'),
+            ('Cahier de textes', reverse('academics:lessons_admin'), 'fa-book-open'),
+            ('Envoyer message', reverse('core:message_create'), 'fa-paper-plane'),
+            ('Publier actualité', reverse('core:news_create'), 'fa-newspaper'),
+            ('Rendez-vous', reverse('core:appointment_admin'), 'fa-calendar-day'),
+            ('Demandes docs', reverse('documents:admin_requests'), 'fa-folder-open'),
+            ('Emploi du temps', reverse('academics:schedule_manage'), 'fa-calendar-alt'),
+            ('Calendrier scolaire', reverse('core:events'), 'fa-calendar-day'),
+            ('Solde', reverse('finance:my_balance'), 'fa-wallet'),
+            ('Cantine et transport', reverse('finance:services_admin'), 'fa-bus'),
+            ('Rentrée scolaire', reverse('academics:year_transition'), 'fa-forward'),
+            ('Demandes de congé', reverse('core:leave_request_admin'), 'fa-plane-departure'),
+        ]
+        return pages
+
+    pages.append(('Messages', reverse('core:inbox'), 'fa-envelope'))
+
+    if user.is_teacher:
+        pages += [
+            ('Mes classes', reverse('academics:teacher_classrooms'), 'fa-chalkboard-teacher'),
+            ('Mon emploi du temps', reverse('academics:teacher_schedule'), 'fa-calendar-alt'),
+            ('Demande de congé', reverse('core:teacher_leave_request_create'), 'fa-plane-departure'),
+        ]
+        return pages
+
+    pages += [
+        ('Résultats', reverse('academics:my_grades'), 'fa-star'),
+        ('Absences', reverse('academics:my_absences'), 'fa-calendar-times'),
+        ('Emploi du temps', reverse('academics:schedule'), 'fa-calendar-alt'),
+        ('Cahier de textes', reverse('academics:my_lessons'), 'fa-book-open'),
+        ('Ressources de cours', reverse('academics:my_resources'), 'fa-folder-open'),
+        ('Documents', reverse('documents:documents'), 'fa-file-alt'),
+        ('Solde', reverse('finance:my_balance'), 'fa-wallet'),
+    ]
+    if user.is_parent:
+        pages.append(('Suivi disciplinaire', reverse('academics:my_notes'), 'fa-clipboard-list'))
+    if user.linked_enrollment:
+        pages.append((
+            'Mon parcours',
+            reverse('academics:student_history', args=[user.linked_enrollment.student.pk]),
+            'fa-route',
+        ))
+    if user.is_parent or user.is_student:
+        pages.append(('Rendez-vous', reverse('core:appointment_request_create'), 'fa-calendar-check'))
+    return pages
+
+
+@login_required
+def global_search(request):
+    query = request.GET.get('q', '').strip()
+    user = request.user
+    students = CustomUser.objects.none()
+    msgs = Message.objects.none()
+    doc_requests = DocumentRequest.objects.none()
+    resources = CourseResource.objects.none()
+    pages = []
+
+    if len(query) >= 2:
+        # Pages du menu correspondant au mot-clé (raccourci de navigation rapide)
+        pages = [
+            {'label': label, 'url': url, 'icon': icon}
+            for label, url, icon in get_navigable_pages(user)
+            if query.lower() in label.lower()
+        ]
+
+        name_match = Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(username__icontains=query)
+
+        # Élèves
+        if user.is_admin_user:
+            students = CustomUser.objects.filter(role='student').filter(
+                name_match | Q(phone__icontains=query) | Q(cin__icontains=query)
+            ).select_related('enrollment__classroom')[:20]
+        elif user.is_teacher:
+            classroom_ids = AcademicSubject.objects.filter(
+                Q(teacher=user) | Q(teacher_tp=user)
+            ).values_list('classroom_id', flat=True).distinct()
+            students = CustomUser.objects.filter(
+                role='student', enrollment__classroom_id__in=classroom_ids, enrollment__is_active=True
+            ).filter(name_match).select_related('enrollment__classroom')[:20]
+
+        # Messages (dans la limite de ce que l'utilisateur peut déjà voir)
+        msg_qs = Message.objects.filter(reply_to__isnull=True) if user.is_admin_user else get_user_messages(user)
+        msgs = msg_qs.filter(
+            Q(title__icontains=query) | Q(content__icontains=query)
+        ).select_related('sender', 'recipient', 'classroom')[:20]
+
+        # Documents : demandes de documents + ressources de cours
+        doc_type_codes = [code for code, label in DocumentRequest.TYPE_CHOICES if query.lower() in label.lower()]
+        if user.is_admin_user:
+            doc_requests = DocumentRequest.objects.filter(
+                Q(notes__icontains=query) | Q(doc_type__in=doc_type_codes)
+                | Q(student__first_name__icontains=query) | Q(student__last_name__icontains=query)
+            ).select_related('student')[:20]
+            resources = CourseResource.objects.filter(
+                Q(title__icontains=query) | Q(description__icontains=query)
+            ).select_related('subject', 'classroom', 'teacher')[:20]
+        elif user.is_teacher:
+            resources = CourseResource.objects.filter(teacher=user).filter(
+                Q(title__icontains=query) | Q(description__icontains=query)
+            ).select_related('subject', 'classroom')[:20]
+        else:
+            enrollment = user.linked_enrollment
+            if enrollment:
+                doc_requests = DocumentRequest.objects.filter(student=enrollment.student).filter(
+                    Q(notes__icontains=query) | Q(doc_type__in=doc_type_codes)
+                )[:20]
+                if enrollment.classroom:
+                    resources = CourseResource.objects.filter(classroom=enrollment.classroom).filter(
+                        Q(title__icontains=query) | Q(description__icontains=query)
+                    ).select_related('subject', 'teacher')[:20]
+
+    notification_count = Notification.objects.filter(recipient=user, is_read=False).count()
+    return render(request, 'core/search.html', {
+        'query': query,
+        'pages': pages,
+        'students': students,
+        'messages_results': msgs,
+        'doc_requests': doc_requests,
+        'resources': resources,
+        'notification_count': notification_count,
+    })
+
+
 @login_required
 def inbox_view(request):
     if request.user.is_admin_user:
         return redirect('core:message_history')
 
-    user_messages = get_user_messages(request.user)
+    user = request.user
+    user_messages = get_user_messages(user).select_related('sender', 'recipient', 'classroom')
     class_messages = []
+    admin_messages = []
+    teacher_messages = []
     personal_messages = []
     for m in user_messages:
-        entry = {'msg': m, 'is_read': m.is_read_by(request.user)}
+        entry = {'msg': m, 'is_read': m.is_read_by(user)}
         if m.recipient_id:
-            personal_messages.append(entry)
+            correspondent = m.recipient if m.sender_id == user.pk else m.sender
+            entry['correspondent'] = correspondent
+            if user.is_teacher:
+                if correspondent and correspondent.role == 'admin':
+                    admin_messages.append(entry)
+                else:
+                    teacher_messages.append(entry)
+            else:
+                personal_messages.append(entry)
         else:
             class_messages.append(entry)
+
+    # Nouveaux (non lus) en premier ; l'ordre du plus récent au plus ancien est conservé au sein de chaque groupe
+    for bucket in (class_messages, admin_messages, teacher_messages, personal_messages):
+        bucket.sort(key=lambda e: e['is_read'])
+
     notification_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
     return render(request, 'core/inbox.html', {
         'class_messages': class_messages,
+        'admin_messages': admin_messages,
+        'teacher_messages': teacher_messages,
         'personal_messages': personal_messages,
+        'class_unread': sum(1 for e in class_messages if not e['is_read']),
+        'admin_unread': sum(1 for e in admin_messages if not e['is_read']),
+        'teacher_unread': sum(1 for e in teacher_messages if not e['is_read']),
+        'personal_unread': sum(1 for e in personal_messages if not e['is_read']),
         'notification_count': notification_count,
     })
 
@@ -339,12 +497,12 @@ def message_history(request):
     teacher_messages = base_qs.filter(
         Q(sender__role='teacher', recipient__role='admin') |
         Q(sender__role='admin', recipient__role='teacher')
-    ).annotate(reply_count=Count('replies'))
+    ).annotate(reply_count=Count('replies')).order_by('-created_at')
     # Messages avec les parents (exclure ceux déjà dans teacher_messages)
     personal_messages = base_qs.filter(recipient__isnull=False).exclude(
         Q(sender__role='teacher', recipient__role='admin') |
         Q(sender__role='admin', recipient__role='teacher')
-    ).annotate(reply_count=Count('replies'))
+    ).annotate(reply_count=Count('replies')).order_by('-created_at')
     notification_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
     return render(request, 'core/message_history.html', {
         'class_messages': class_messages,
@@ -421,7 +579,7 @@ def teacher_message_compose(request):
 
 @login_required
 def parent_message_to_teacher(request):
-    """Permet à un parent d'envoyer un message à un enseignant de son enfant."""
+    """Permet à un parent d'envoyer un message à un enseignant de son enfant ou à l'administration."""
     if not request.user.is_parent:
         return redirect('core:home')
 
@@ -431,27 +589,37 @@ def parent_message_to_teacher(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         content = request.POST.get('content')
-        teacher_id = request.POST.get('teacher')
+        target = request.POST.get('target', 'teacher')
         attachment = request.FILES.get('attachment')
         child_id = request.POST.get('child')
-
-        teacher = CustomUser.objects.filter(pk=teacher_id, role='teacher').first() if teacher_id else None
-        if not teacher:
-            messages.error(request, "Veuillez sélectionner un enseignant.")
-            return redirect('core:parent_message_to_teacher')
-
         about_student = children.filter(pk=child_id).first() if child_id else None
+
+        if target == 'admin':
+            recipient = CustomUser.objects.filter(role='admin').first()
+            if not recipient:
+                messages.error(request, "Aucun administrateur trouvé.")
+                return redirect('core:parent_message_to_teacher')
+        else:
+            teacher_id = request.POST.get('teacher')
+            recipient = CustomUser.objects.filter(pk=teacher_id, role='teacher').first() if teacher_id else None
+            if not recipient:
+                messages.error(request, "Veuillez sélectionner un enseignant.")
+                return redirect('core:parent_message_to_teacher')
 
         msg = Message.objects.create(
             title=title,
             content=content,
             sender=request.user,
-            recipient=teacher,
+            recipient=recipient,
             attachment=attachment,
             about_student=about_student,
         )
-        notify_user(teacher, 'Nouveau message de parent', f"De: {request.user.get_full_name()} - {title}", f'/messages/{msg.pk}/')
-        messages.success(request, 'Message envoyé à l\'enseignant.')
+        if target == 'admin':
+            notify_user(recipient, 'Nouveau message de parent', f"De: {request.user.get_full_name()} - {title}", f'/messages/{msg.pk}/')
+            messages.success(request, "Message envoyé à l'administration.")
+        else:
+            notify_user(recipient, 'Nouveau message de parent', f"De: {request.user.get_full_name()} - {title}", f'/messages/{msg.pk}/')
+            messages.success(request, 'Message envoyé à l\'enseignant.')
         return redirect('core:parent_message_to_teacher')
 
     # Récupérer tous les enseignants des enfants
@@ -582,7 +750,64 @@ def appointment_admin_view(request):
                 notify_user(appt.parent, 'Rendez-vous mis à jour', appt.get_status_display(), '/appointments/new/')
             messages.success(request, 'Rendez-vous mis a jour.')
         return redirect('core:appointment_admin')
-    return render(request, 'core/appointment_admin.html', {'appointments': appointments})
+    return render(request, 'core/appointment_admin.html', {
+        'appointments': appointments,
+        'total_count': appointments.count(),
+        'pending_count': appointments.filter(status=AppointmentRequest.STATUS_PENDING).count(),
+        'accepted_count': appointments.filter(status=AppointmentRequest.STATUS_ACCEPTED).count(),
+        'rejected_count': appointments.filter(status=AppointmentRequest.STATUS_REJECTED).count(),
+    })
+
+
+@login_required
+def teacher_leave_request_create(request):
+    if not request.user.is_teacher:
+        return redirect('core:home')
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if not start_date or not end_date:
+            messages.error(request, 'Veuillez choisir une date de début et de fin.')
+            return redirect('core:teacher_leave_request_create')
+        TeacherLeaveRequest.objects.create(
+            teacher=request.user,
+            start_date=start_date,
+            end_date=end_date,
+            reason=request.POST.get('reason', ''),
+        )
+        notify_roles('admin', 'Nouvelle demande de congé', request.user.get_full_name(), '/conges/administration/')
+        messages.success(request, 'Demande de congé envoyée.')
+        return redirect('core:teacher_leave_request_create')
+    my_requests = TeacherLeaveRequest.objects.filter(teacher=request.user)
+    return render(request, 'core/teacher_leave_request_form.html', {'my_requests': my_requests})
+
+
+@login_required
+def leave_request_admin(request):
+    if not request.user.is_admin_user:
+        return redirect('core:home')
+    leave_requests = TeacherLeaveRequest.objects.select_related('teacher', 'reviewed_by').all()
+    if request.method == 'POST':
+        leave_req = get_object_or_404(TeacherLeaveRequest, pk=request.POST.get('request_id'))
+        action = request.POST.get('action')
+        if action in {'accepted', 'rejected'}:
+            status_changed = leave_req.status != action
+            leave_req.status = action
+            leave_req.admin_notes = request.POST.get('admin_notes', '')
+            leave_req.reviewed_by = request.user
+            leave_req.reviewed_at = timezone.now()
+            leave_req.save()
+            if status_changed:
+                notify_user(leave_req.teacher, 'Demande de congé mise à jour', leave_req.get_status_display(), '/conges/nouvelle/')
+            messages.success(request, 'Demande de congé mise à jour.')
+        return redirect('core:leave_request_admin')
+    return render(request, 'core/leave_request_admin.html', {
+        'leave_requests': leave_requests,
+        'total_count': leave_requests.count(),
+        'pending_count': leave_requests.filter(status=TeacherLeaveRequest.STATUS_PENDING).count(),
+        'accepted_count': leave_requests.filter(status=TeacherLeaveRequest.STATUS_ACCEPTED).count(),
+        'rejected_count': leave_requests.filter(status=TeacherLeaveRequest.STATUS_REJECTED).count(),
+    })
 
 
 @login_required
